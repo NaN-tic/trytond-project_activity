@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tryton>
+    <data>
+        <record model="ir.ui.view" id="project_activity_reference_form_view">
+            <field name="model">project.reference</field>
+            <field name="type">form</field>
+            <field name="name">project_reference_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="project_activity_reference_tree_view">
+            <field name="model">project.reference</field>
+            <field name="type">tree</field>
+            <field name="name">project_reference_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_project_activity_reference">
+            <field name="name">Project Activity Reference</field>
+            <field name="res_model">project.reference</field>
+            <field name="search_value"></field>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_project_reference_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="project_activity_reference_tree_view"/>
+            <field name="act_window" ref="act_project_activity_reference"/>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_project_reference_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="project_activity_reference_form_view"/>
+            <field name="act_window" ref="act_project_activity_reference"/>
+        </record>
+
+        <record model="ir.model.access" id="access_project_reference">
+            <field name="model" search="[('model', '=', 'project.reference')]"/>
+            <field name="group" ref="project.group_project_admin"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_delete" eval="True"/>
+        </record>
+
+        <record model="ir.ui.view" id="project_form_view">
+            <field name="model">project.work</field>
+            <field name="inherit" ref="project.work_view_form"/>
+            <field name="name">project_work_form</field>
+        </record>
+        
+        <record model="ir.ui.view" id="activity_form_view">
+            <field name="model">activity.activity</field>
+            <field name="inherit" ref="activity.activity_activity_form_view"/>
+            <field name="name">activity_form</field>
+        </record>
+
+        <!-- Menus -->
+        <menuitem action="act_project_activity_reference"
+            id="menu_project_reference" 
+            parent="project.menu_configuration" sequence="1"
+            name="Project Reference"/>
+    </data>
+</tryton>
