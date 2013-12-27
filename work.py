@@ -6,7 +6,6 @@ from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
 
 __metaclass__ = PoolMeta
-
 __all__ = ['ProjectReference', 'Activity', 'Project']
 
 
@@ -14,17 +13,15 @@ class ProjectReference(ModelSQL, ModelView):
     'Project Reference'
     __name__ = "project.reference"
     _rec_name = 'model'
-
     model = fields.Many2One('ir.model', 'Model', required=True)
+
 
 class Project:
     __name__ = 'project.work'
-
     activities = fields.One2Many('activity.activity', 'resource',
         'Activities')
     last_action_date = fields.Function(fields.DateTime('Last Action'),
         'get_last_action_date')
-
     resource = fields.Reference('Resource', selection='get_resource')
 
     def get_last_action_date(self, name=None):
@@ -46,5 +43,4 @@ class Project:
 
 class Activity:
     __name__ = 'activity.activity'
-
     tasks = fields.One2Many('project.work', 'resource', 'Tasks')
