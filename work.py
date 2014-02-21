@@ -35,7 +35,7 @@ class Project:
     @classmethod
     def get_resource(cls):
         ProjectReference = Pool().get('project.reference')
-        res = [(None, '')]
+        res = [('', '')]
         for _type in ProjectReference.search([]):
             res.append((_type.model.model, _type.model.name))
         return res
