@@ -22,7 +22,28 @@ class Project:
         'Activities')
     last_action_date = fields.Function(fields.DateTime('Last Action'),
         'get_last_action_date')
+    channel = fields.Function(fields.Char('Channel'), 'get_channel')
+    contact_name = fields.Function(fields.Char('Contact Name'), 'get_contact')
+
     resource = fields.Reference('Resource', selection='get_resource')
+
+    def get_channel(self, name):
+        if not self.activities:
+            return None
+        Activity = Pool().get('activity.activity')
+        act = Activity.search([('resource', '=', 'project.work,%s' %
+            self.id), ('direction', '=', 'incoming')],
+            order=[('dtstart', 'asc')], limit=1)
+        return act and act[0].type or None
+
+    def get_contact(self, name):
+        if not self.activities:
+            return None
+        Activity = Pool().get('activity.activity')
+        act = Activity.search([('resource', '=', 'project.work,%s' %
+            self.id), ('direction', '=', 'incoming')],
+            order=[('dtstart', 'asc')], limit=1)
+        return act and act[0].party and act[0].party.name or None
 
     def get_last_action_date(self, name=None):
         if not self.activities:

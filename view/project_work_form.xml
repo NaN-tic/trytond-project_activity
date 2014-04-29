@@ -16,6 +16,10 @@ contains the full copyright notices and license terms. -->
         <page name="activities">
             <label name="last_action_date"/>
             <field name="last_action_date"/>
+            <label name="channel"/>
+            <field name="channel"/>
+            <label name="contact_name"/>
+            <field name="contact_name"/>
             <field name="activities" colspan="4"/>
         </page>
     </xpath>
