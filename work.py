@@ -33,7 +33,7 @@ class Project:
         Activity = Pool().get('activity.activity')
         act = Activity.search([('resource', '=', 'project.work,%s' % self.id)],
             order=[('dtstart', 'asc')], limit=1)
-        return act and act[0].activity_type or None
+        return act and act[0].activity_type and act[0].activity_type.id or None
 
     def get_contact(self, name):
         if not self.activities:
