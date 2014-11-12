@@ -40,8 +40,7 @@ class Project:
             return None
         Activity = Pool().get('activity.activity')
         act = Activity.search([('resource', '=', 'project.work,%s' %
-            self.id), ('direction', '=', 'incoming')],
-            order=[('dtstart', 'asc')], limit=1)
+            self.id)], order=[('dtstart', 'asc')], limit=1)
         return act and act[0].party and act[0].party.name or None
 
     def get_last_action_date(self, name=None):
