@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--The COPYRIGHT file at the top level of this repository             
+<!--The COPYRIGHT file at the top level of this repository
 contains the full copyright notices and license terms. -->
 <data>
-
-    <xpath
-        expr="/form/field[@name='party_address']"
-        position="after">
+    <xpath expr="/form/field[@name='party_address']" position="after">
         <label name="resource"/>
         <field name="resource"/>
     </xpath>
-
-    <xpath
-        expr="/form/notebook"
-        position="after">
+    <xpath expr="/form/notebook" position="inside">
         <page name="activities">
             <label name="last_action_date"/>
             <field name="last_action_date"/>
@@ -23,5 +17,4 @@ contains the full copyright notices and license terms. -->
             <field name="activities" colspan="4"/>
         </page>
     </xpath>
-
 </data>
