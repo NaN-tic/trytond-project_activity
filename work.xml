@@ -31,6 +31,14 @@
             <field name="act_window" ref="act_project_activity_reference"/>
         </record>
 
+        <record model="ir.model.access" id="access_project_reference_default">
+            <field name="model" search="[('model', '=', 'project.reference')]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_delete" eval="False"/>
+        </record>
+
         <record model="ir.model.access" id="access_project_reference">
             <field name="model" search="[('model', '=', 'project.reference')]"/>
             <field name="group" ref="project.group_project_admin"/>
@@ -45,7 +53,7 @@
             <field name="inherit" ref="project.work_view_form"/>
             <field name="name">project_work_form</field>
         </record>
-        
+
         <record model="ir.ui.view" id="activity_form_view">
             <field name="model">activity.activity</field>
             <field name="inherit" ref="activity.activity_activity_form_view"/>
@@ -54,7 +62,7 @@
 
         <!-- Menus -->
         <menuitem action="act_project_activity_reference"
-            id="menu_project_reference" 
+            id="menu_project_reference"
             parent="project.menu_configuration" sequence="1"
             name="Project Reference"/>
     </data>
