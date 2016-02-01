@@ -21,35 +21,35 @@ class Project:
     activities = fields.One2Many('activity.activity', 'resource',
         'Activities')
     last_action_date = fields.Function(fields.DateTime('Last Action'),
-        'get_last_action_date')
-    channel = fields.Function(fields.Many2One('activity.type', 'Channel'), 'get_channel')
-    contact_name = fields.Function(fields.Char('Contact Name'), 'get_contact')
-
+        'get_activity_fields')
+    channel = fields.Function(fields.Many2One('activity.type', 'Channel'),
+        'get_activity_fields')
+    contact_name = fields.Function(fields.Char('Contact Name'),
+        'get_activity_fields')
     resource = fields.Reference('Resource', selection='get_resource')
 
-    def get_channel(self, name):
-        if not self.activities:
-            return None
-        Activity = Pool().get('activity.activity')
-        act = Activity.search([('resource', '=', 'project.work,%s' % self.id)],
-            order=[('dtstart', 'asc')], limit=1)
-        return act and act[0].activity_type and act[0].activity_type.id or None
-
-    def get_contact(self, name):
-        if not self.activities:
-            return None
-        Activity = Pool().get('activity.activity')
-        act = Activity.search([('resource', '=', 'project.work,%s' %
-            self.id)], order=[('dtstart', 'asc')], limit=1)
-        return act and act[0].party and act[0].party.name or None
-
-    def get_last_action_date(self, name=None):
-        if not self.activities:
-            return None
-        Activity = Pool().get('activity.activity')
-        act = Activity.search([('resource', '=', 'project.work,%s' %
-            self.id)], order=[('dtstart', 'desc')], limit=1)
-        return act and act[0].dtstart or None
+    @classmethod
+    def get_activity_fields(self, works, names):
+        result = {}
+        work_ids = [w.id for w in works]
+        for name in ['last_action_date', 'channel', 'contact_name']:
+            result[name] = {}.fromkeys(work_ids, None)
+        max_date, min_date = None, None
+        for w in works:
+            for activity in w.activities:
+                if not min_date or activity.dtstart <= min_date:
+                    min_date = activity.dtstart
+                    result['channel'][w.id] = (activity.activity_type.id
+                        if activity.activity_type else None)
+                    result['contact_name'][w.id] = (activity.party.rec_name
+                        if activity.party else None)
+                if not max_date or activity.dtstart >= max_date:
+                    max_date = activity.dtstart
+                    result['last_action_date'][w.id] = activity.dtstart
+        for name in ['last_action_date', 'channel', 'contact_name']:
+            if name not in names:
+                del result[name]
+        return result
 
     @classmethod
     def get_resource(cls):
