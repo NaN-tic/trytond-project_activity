@@ -41,8 +41,9 @@ class Project:
                     min_date = activity.dtstart
                     result['channel'][w.id] = (activity.activity_type.id
                         if activity.activity_type else None)
-                    result['contact_name'][w.id] = (activity.party.rec_name
-                        if activity.party else None)
+                    result['contact_name'][w.id] = (
+                        activity.contacts[0].rec_name if activity.contacts
+                        else None)
                 if not max_date or activity.dtstart >= max_date:
                     max_date = activity.dtstart
                     result['last_action_date'][w.id] = activity.dtstart
