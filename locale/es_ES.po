@@ -1,0 +1,71 @@
+# 
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgctxt "field:activity.activity,tasks:"
+msgid "Tasks"
+msgstr "Tareas"
+
+msgctxt "field:project.reference,create_date:"
+msgid "Create Date"
+msgstr "Fecha de creación"
+
+msgctxt "field:project.reference,create_uid:"
+msgid "Create User"
+msgstr "Usuario de creación"
+
+msgctxt "field:project.reference,id:"
+msgid "ID"
+msgstr "Identificador"
+
+msgctxt "field:project.reference,model:"
+msgid "Model"
+msgstr "Modelo"
+
+msgctxt "field:project.reference,rec_name:"
+msgid "Name"
+msgstr "Nombre"
+
+msgctxt "field:project.reference,write_date:"
+msgid "Write Date"
+msgstr "Fecha modificación"
+
+msgctxt "field:project.reference,write_uid:"
+msgid "Write User"
+msgstr "Usuario modificación"
+
+msgctxt "field:project.work,activities:"
+msgid "Activities"
+msgstr "Actividades"
+
+msgctxt "field:project.work,channel:"
+msgid "Channel"
+msgstr "Canal"
+
+msgctxt "field:project.work,contact_name:"
+msgid "Contact Name"
+msgstr "Nombre contacto"
+
+msgctxt "field:project.work,last_action_date:"
+msgid "Last Action"
+msgstr "Última acción"
+
+msgctxt "field:project.work,resource:"
+msgid "Resource"
+msgstr "Recurso"
+
+msgctxt "model:ir.action,name:act_project_activity_reference"
+msgid "Project Activity Reference"
+msgstr "Referencia actividad proyectos"
+
+msgctxt "model:ir.ui.menu,name:menu_project_reference"
+msgid "Project Reference"
+msgstr "Referencia proyectos"
+
+msgctxt "model:project.reference,name:"
+msgid "Project Reference"
+msgstr "Referencia proyectos"
+
+msgctxt "view:project.reference:"
+msgid "Project Reference"
+msgstr "Referencia proyectos"
