@@ -1,4 +1,4 @@
-# 
+#
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
@@ -16,7 +16,7 @@ msgstr "Usuari creació"
 
 msgctxt "field:project.reference,id:"
 msgid "ID"
-msgstr "Identificador"
+msgstr "ID"
 
 msgctxt "field:project.reference,model:"
 msgid "Model"
