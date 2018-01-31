@@ -6,12 +6,13 @@ import trytond.tests.test_tryton
 from trytond.tests.test_tryton import ModuleTestCase
 
 
-class TestCase(ModuleTestCase):
-    'Test module'
+class ProjectActivityTestCase(ModuleTestCase):
+    'Test Project Activity module'
     module = 'project_activity'
 
 
 def suite():
     suite = trytond.tests.test_tryton.suite()
-    suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TestCase))
+    suite.addTests(unittest.TestLoader().loadTestsFromTestCase(
+        ProjectActivityTestCase))
     return suite
