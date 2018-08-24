@@ -15,9 +15,8 @@ class ProjectReference(ModelSQL, ModelView):
     model = fields.Many2One('ir.model', 'Model', required=True)
 
 
-class Project:
+class Project(metaclass=PoolMeta):
     __name__ = 'project.work'
-    __metaclass__ = PoolMeta
 
     activities = fields.One2Many('activity.activity', 'resource',
         'Activities')
@@ -62,7 +61,6 @@ class Project:
         return res
 
 
-class Activity:
+class Activity(metaclass=PoolMeta):
     __name__ = 'activity.activity'
-    __metaclass__ = PoolMeta
     tasks = fields.One2Many('project.work', 'resource', 'Tasks')
