@@ -35,8 +35,8 @@ class Project:
         work_ids = [w.id for w in works]
         for name in ['last_action_date', 'channel', 'contact_name']:
             result[name] = {}.fromkeys(work_ids, None)
-        max_date, min_date = None, None
         for w in works:
+            max_date, min_date = None, None
             for activity in w.activities:
                 if not min_date or activity.dtstart <= min_date:
                     min_date = activity.dtstart
