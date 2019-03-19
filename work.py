@@ -1,6 +1,8 @@
 # This file is part of project_activity module for Tryton.
 # The COPYRIGHT file at the top level of this repository contains the full
 # copyright notices and license terms.
+import cgi
+import humanize
 
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
@@ -27,6 +29,8 @@ class Project(metaclass=PoolMeta):
     contact_name = fields.Function(fields.Char('Contact Name'),
         'get_activity_fields')
     resource = fields.Reference('Resource', selection='get_resource')
+    conversation = fields.Function(fields.Text('Conversation'),
+        'get_conversation')
 
     @classmethod
     def get_activity_fields(cls, works, names):
@@ -59,6 +63,50 @@ class Project(metaclass=PoolMeta):
         for _type in ProjectReference.search([]):
             res.append((_type.model.model, _type.model.name))
         return res
+
+    def get_conversation(self, name):
+        res = []
+        for activity in self.activities:
+            description_text = activity.description
+            description_text = cgi.escape(description_text)
+            if not description_text:
+                continue
+            description_text = u'<br/>'.join(description_text.splitlines())
+
+            # Original Fields
+            # type, date, contact, code, subject, description
+
+            body = "\n"
+            body += u'<div align="left">'
+            body += u'<font size="4"><b>'
+            body += u'<font color="">%(type)s</font>'
+            body += u', %(date_human)s'
+            body += u'</b></font></div>'
+            body += u'<div align="left">'
+            body += u'<font size="2" color="#778899">'
+            body += u'<font color="#00000">Code: </font>%(code)s'
+            body += u'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+            body += u'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+            body += u'<font color="#00000">Contact: </font>%(contact)s'
+            body += u'<br><font color="#00000">Date: </font>%(date)'
+            body += u's&nbsp;&nbsp;&nbsp;'
+            body += u'<font color="#00000">State: </font>%(state)s'
+            body += u'<br><font color="#00000">Subject: </font>%(subject)s'
+            body += u'</font></div>'
+            body += u'<div align="left"><br/>%(description)s<hr></div>'
+            body = body % ({
+                'type': activity.activity_type.name,
+                'code': activity.code,
+                'subject': activity.subject or "",
+                'date': activity.dtstart,
+                'date_human': humanize.naturaltime(activity.dtstart),
+                'contact': (activity.contacts and activity.contacts[0].name
+                    or activity.employee and activity.employee.party.name),
+                'description': description_text,
+                'state': activity.state,
+                })
+            res.append(body)
+        return ''.join(res)
 
 
 class Activity(metaclass=PoolMeta):
