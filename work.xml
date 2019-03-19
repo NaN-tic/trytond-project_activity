@@ -67,5 +67,20 @@ contains the full copyright notices and license terms. -->
             id="menu_project_reference"
             parent="project.menu_configuration" sequence="1"
             name="Project Reference"/>
+
+        <record model="ir.action.act_window" id="act_activity_form2">
+             <field name="name">Activities</field>
+             <field name="res_model">activity.activity</field>
+             <field name="domain"
+                 eval="[If(Eval('active_ids', []) == [Eval('active_id')], ('resource.id', '=', Eval('active_id'), 'project.work'), ('resource.id', 'in', Eval('active_ids'), 'project.work'))]"
+                 pyson="1"/>
+         </record>
+         <record model="ir.action.keyword"
+                 id="act_open_activity_keyword1">
+             <field name="keyword">form_relate</field>
+             <field name="model">project.work,-1</field>
+             <field name="action" ref="act_activity_form2"/>
+         </record>
+
     </data>
 </tryton>
