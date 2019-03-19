@@ -29,7 +29,7 @@ class Project(metaclass=PoolMeta):
     resource = fields.Reference('Resource', selection='get_resource')
 
     @classmethod
-    def get_activity_fields(self, works, names):
+    def get_activity_fields(cls, works, names):
         result = {}
         work_ids = [w.id for w in works]
         for name in ['last_action_date', 'channel', 'contact_name']:
