@@ -97,7 +97,7 @@ class Project(metaclass=PoolMeta):
             body += u'<font color="#00000">State: </font>%(state)s'
             body += u'<br><font color="#00000">Subject: </font>%(subject)s'
             body += u'</font></div>'
-            body += u'<div align="left"><br/>%(description)s<hr></div>'
+            body += u'<div align="left"><br/>%(description)s<hr/></div>'
             body = body % ({
                 'type': activity.activity_type.name,
                 'code': activity.code,
