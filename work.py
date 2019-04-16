@@ -6,6 +6,8 @@ import humanize
 
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
+from trytond.pyson import Eval
+from trytond.transaction import Transaction
 
 __all__ = ['ProjectReference', 'Activity', 'Project']
 
@@ -22,7 +24,9 @@ class Project:
     __metaclass__ = PoolMeta
 
     activities = fields.One2Many('activity.activity', 'resource',
-        'Activities')
+        'Activities', context={
+            'project_party': Eval('party'),
+            }, depends=['party'])
     last_action_date = fields.Function(fields.DateTime('Last Action'),
         'get_activity_fields')
     channel = fields.Function(fields.Many2One('activity.type', 'Channel'),
@@ -114,3 +118,10 @@ class Activity:
     __name__ = 'activity.activity'
     __metaclass__ = PoolMeta
     tasks = fields.One2Many('project.work', 'resource', 'Tasks')
+
+    @classmethod
+    def default_party(cls):
+        project_party_id = Transaction().context.get('project_party')
+        if project_party_id:
+            return project_party_id
+        return super(Activity, cls).default_party()
