@@ -71,10 +71,8 @@ class Project(metaclass=PoolMeta):
     def get_conversation(self, name):
         res = []
         for activity in self.activities:
-            description_text = activity.description
+            description_text = activity.description or ''
             description_text = cgi.escape(description_text)
-            if not description_text:
-                continue
             description_text = u'<br/>'.join(description_text.splitlines())
 
             # Original Fields
