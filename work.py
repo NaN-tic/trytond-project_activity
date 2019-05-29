@@ -3,6 +3,7 @@
 # copyright notices and license terms.
 import cgi
 import humanize
+import re
 
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
@@ -10,6 +11,8 @@ from trytond.pyson import Eval
 from trytond.transaction import Transaction
 
 __all__ = ['ProjectReference', 'Activity', 'Project']
+
+EMAIL_PATTERN = r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+"
 
 
 class ProjectReference(ModelSQL, ModelView):
@@ -121,3 +124,91 @@ class Activity(metaclass=PoolMeta):
         if project_party_id:
             return project_party_id
         return super(Activity, cls).default_party()
+
+    @classmethod
+    def cron_get_mail_activity(cls):
+        pool = Pool()
+        ElectronicMail = pool.get('electronic.mail')
+        ProjectWork = pool.get('project.work')
+        Work = pool.get('project.work')
+        Configuration = pool.get('work.configuration')
+        Employee = pool.get('company.employee')
+
+        def extract_id(reference):
+            if not reference:
+                return
+            get_id = reference.replace('<','')
+            get_id = get_id.split('@')
+            try:
+                return int(get_id[0])
+            except ValueError:
+                return
+
+        configuration = Configuration(1)
+        default_employee = configuration.email_activity_employee
+        default_activity_type = configuration.email_activity_type
+        mailbox = configuration.email_activity_mailbox
+
+        mails = ElectronicMail.search([
+                ('in_reply_to', '!=', None),
+                ('flag_seen', '=', False),
+                ('mailbox', '=', mailbox.id)
+                ])
+        new_args = []
+        for mail in mails:
+            work_ids = []
+            if mail.in_reply_to:
+                work_id = extract_id(mail.in_reply_to)
+                if work_id:
+                    work_ids.append(work_id)
+
+            if mail.reference != None:
+                # Delete string literal (\r, \n, \t)
+                reference = mail.reference
+                for char in ('\r', '\n', '\t'):
+                    reference = reference.replace(char, ' ')
+                for reference in reference.split():
+                    work_id = extract_id(reference)
+                    if work_id:
+                        work_ids.append(work_id)
+
+            if work_ids:
+                works = ProjectWork.search([
+                        ('id', 'in', work_ids),
+                        ], limit=1)
+
+                if works:
+                    # Search if the sender is an employee
+                    employee = default_employee
+                    if mail.from_:
+                        from_email = re.findall(EMAIL_PATTERN, mail.from_)
+                        if from_email:
+                            employees = Employee.search([
+                                    ('party.contact_mechanisms.value', '=',
+                                        from_email[0])
+                                    ], limit=1)
+                            if employees:
+                                employee = employees[0]
+
+                    activities = {
+                        'activities': [
+                            ('create', [{
+                                    'description': mail.body_plain,
+                                    'subject': mail.subject,
+                                    'resource': 'project.work,%s' % works[0].id,
+                                    # Mandatory fields:
+                                    'dtstart': mail.date,
+                                    'activity_type': default_activity_type,
+                                    'state': 'held',
+                                    'employee': employee,
+                                    }])
+                            ]}
+
+                    new_args.append(works)
+                    new_args.append(activities)
+                    mail.flag_seen = True
+
+        if new_args:
+            Work.write(*new_args)
+        if mails:
+            ElectronicMail.save(mails)
