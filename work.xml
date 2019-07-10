@@ -85,7 +85,7 @@ contains the full copyright notices and license terms. -->
         <!-- obtain email activity -->
         <record model="ir.cron" id="cron_get_mail_activity">
             <field name="method">activity.activity|cron_get_mail_activity</field>
-            <field name="interval_number">5</field>
+            <field name="interval_number" eval="5"/>
             <field name="interval_type">minutes</field>
         </record>
     </data>
