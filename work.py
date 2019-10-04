@@ -106,7 +106,7 @@ class Project(metaclass=PoolMeta):
                 'code': activity.code,
                 'subject': activity.subject or "",
                 'date': activity.date,
-                'time': activity.time,
+                'time': activity.time or "",
                 'date_human': humanize.naturaltime(activity.dtstart),
                 'contact': (activity.contacts and activity.contacts[0].name
                     or activity.employee and activity.employee.party.name),
