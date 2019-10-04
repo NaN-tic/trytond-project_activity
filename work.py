@@ -77,7 +77,8 @@ class Project(metaclass=PoolMeta):
             description_text = activity.description or ''
             description_text = cgi.escape(description_text)
             description_text = u'<br/>'.join(description_text.splitlines())
-            uid = self.write_uid or self.create_uid
+            uid = activity.write_uid or activity.create_uid
+
             # Original Fields
             # type, date, contact, code, subject, description
 
@@ -93,7 +94,7 @@ class Project(metaclass=PoolMeta):
             body += u'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
             body += u'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
             body += u'<font color="#00000">Contact: </font>%(contact)s'
-            body += u'<br><font color="#00000">Date: </font>%(date)'
+            body += u'<br><font color="#00000">Date: </font>%(date)s %(time)'
             body += u's&nbsp;&nbsp;&nbsp;'
             body += u'<font color="#00000">State: </font>%(state)s'
             body += u'<br><font color="#00000">Subject: </font>%(subject)s'
@@ -104,7 +105,8 @@ class Project(metaclass=PoolMeta):
                 'type': activity.activity_type.name,
                 'code': activity.code,
                 'subject': activity.subject or "",
-                'date': activity.dtstart,
+                'date': activity.date,
+                'time': activity.time,
                 'date_human': humanize.naturaltime(activity.dtstart),
                 'contact': (activity.contacts and activity.contacts[0].name
                     or activity.employee and activity.employee.party.name),
