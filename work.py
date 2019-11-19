@@ -203,7 +203,7 @@ class Activity(metaclass=PoolMeta):
                                     # Mandatory fields:
                                     'dtstart': mail.date,
                                     'activity_type': default_activity_type,
-                                    'state': 'held',
+                                    'state': 'done',
                                     'employee': employee,
                                     }])
                             ]}
