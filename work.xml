@@ -98,5 +98,9 @@ contains the full copyright notices and license terms. -->
             <field name="interval_number" eval="5"/>
             <field name="interval_type">minutes</field>
         </record>
+
+        <record model="activity.reference" id="project_work_reference">
+            <field name="model" search="[('model', '=', 'project.work')]"/>
+        </record>
     </data>
 </tryton>
