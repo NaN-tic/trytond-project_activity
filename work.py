@@ -1,7 +1,7 @@
 # This file is part of project_activity module for Tryton.
 # The COPYRIGHT file at the top level of this repository contains the full
 # copyright notices and license terms.
-import cgi
+import html
 import humanize
 import re
 
@@ -75,7 +75,7 @@ class Project(metaclass=PoolMeta):
         res = []
         for activity in self.activities:
             description_text = activity.description or ''
-            description_text = cgi.escape(description_text)
+            description_text = html.escape(description_text)
             description_text = u'<br/>'.join(description_text.splitlines())
 
             # Original Fields
