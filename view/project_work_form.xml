@@ -8,7 +8,7 @@ contains the full copyright notices and license terms. -->
     </xpath>
     <xpath expr="/form/notebook" position="inside">
         <page name="activities" col="6">
-            <field name="conversation" widget="richtext" toolbar="0" yexpand="1" yfill="1" colspan="3"/>
+            <field name="conversation" widget="document" toolbar="0" yexpand="1" yfill="1" colspan="3"/>
             <group id="activity" colspan="3" yexpand="1" yfill="1">
                 <label name="last_action_date"/>
                 <field name="last_action_date"/>
