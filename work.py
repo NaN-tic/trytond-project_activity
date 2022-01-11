@@ -4,48 +4,16 @@
 import html
 import humanize
 import re
-import mimetypes
-try:
-    from http import HTTPStatus
-except ImportError:
-    from http import client as HTTPStatus
+
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval
-
-from trytond.wsgi import app
 from trytond.transaction import Transaction
-from werkzeug.wrappers import Response
-from werkzeug.exceptions import abort
-from trytond.transaction import Transaction
-from trytond.protocols.wrappers import with_pool, with_transaction
-from trytond.url import URLAccessor
 
 __all__ = ['ProjectReference', 'Activity', 'Project']
 
 EMAIL_PATTERN = r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+"
 
-@app.route('/<database_name>/ir/attachment/<int:record>',
-    methods={'GET'})
-@app.auth_required
-@with_pool
-@with_transaction(
-    user='request', context=dict(_check_access=True, fuzzy_translation=True))
-def attachment(request, pool, record):
-    Attachment = pool.get('ir.attachment')
-    attachments = Attachment.search([('id', '=', record)], limit=1)
-    if not attachments:
-        abort(HTTPStatus.NOT_FOUND)
-
-    attachment = attachments[0]
-    mimetype, _ = mimetypes.guess_type(attachment.name)
-    if not mimetype:
-        mimetype = 'application/octet-stream'
-    response = Response(attachment.data, mimetype=mimetype)
-    response.headers.add(
-            'Content-Disposition', 'attachment', filename=attachment.name)
-    response.headers.add('Content-Length', len(attachment.data))
-    return response
 
 class ProjectReference(ModelSQL, ModelView):
     'Project Reference'
@@ -68,7 +36,7 @@ class Project(metaclass=PoolMeta):
     contact_name = fields.Function(fields.Char('Contact Name'),
         'get_activity_fields')
     resource = fields.Reference('Resource', selection='get_resource')
-    conversation = fields.Function(fields.Binary('Conversation'),
+    conversation = fields.Function(fields.Text('Conversation'),
         'get_conversation')
 
     @classmethod
@@ -105,57 +73,33 @@ class Project(metaclass=PoolMeta):
 
     def get_conversation(self, name):
         res = []
-        body_mail = []
-        previous = []
-        attachment_names = []
-        pool = Pool()
-        Attachment = pool.get('ir.attachment')
-
         for activity in self.activities:
             description_text = activity.description or ''
-            for line in description_text.splitlines():
-                if line.startswith('>'):
-                    previous.append(line)
-                else:
-                    body_mail += previous
-                    previous = []
-                    body_mail.append(line)
-
-            attachments = Attachment.search([('resource.id', '=', activity.id,
-                    'activity.activity')])
-            attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' %
-                (URLAccessor.http_host(), Transaction().database.name, x.id,
-                     x.name) for x in attachments]
-            attachs_str = ("<div style='line-height: 2'>"
-                    + " ".join(attachment_names) + "</div>")
-            body_str = "\n".join(body_mail)
-            previous_str = "\n".join(previous)
-            body_str = html.escape(body_str)
-            body_str = '<br/>'.join(body_str.splitlines())
-            previous_str = html.escape(previous_str)
-            previous_str = '<br/>'.join(previous_str.splitlines())
+            description_text = html.escape(description_text)
+            description_text = u'<br/>'.join(description_text.splitlines())
 
             # Original Fields
             # type, date, contact, code, subject, description
 
             body = "\n"
-            body += '<span style="font-size:13px;">'
-            body += '<div style="font-family: Sans-serif;">'
-            body += '<h1>%(type)s, %(date_human)s</h1>'
-            body += '<table style="font-size:13px;"><tr>'
-            body += '<td>Code: <span style="color:#778899;">%(code)s</span></td>'
-            body += '<td>Contact: <span style="color:#778899;">%(contact)s</span></td></tr>'
-            body += '<tr><td>Date: <span style="color:#778899;">%(date)s %(time)s</span></td>'
-            body += '<td>State: <span style="color:#778899;">%(state)s</span></td></tr>'
-            body += '<tr><td colspan="0">Subject: <span style="color:#778899;">%(subject)s</span></td></tr>'
-            body += '<tr><td colspan="0">Employee: <span style="color:#778899;">%(employee)s</span></td></tr>'
-            body += '</table></div>'
-            body += '<div style="font-family: Sans-serif;">%(attachments)s</div>'
-            body += '<div style="font-family: Sans-serif;"><br/>%(description_body)s</div>'
-            body += '''<a href="javascript:toggle('%(toggle_id)s');">...</a>'''
-            body += '<hr/>'
-            body += '<div id="%(toggle_id)s" style="display:none; font-family: Sans-serif;"><br/>%(description_previous)s</div>'
-            body += '</span>'
+            body += u'<div align="left">'
+            body += u'<font size="4"><b>'
+            body += u'<font color="">%(type)s</font>'
+            body += u', %(date_human)s'
+            body += u'</b></font></div>'
+            body += u'<div align="left">'
+            body += u'<font size="2" color="#778899">'
+            body += u'<font color="#00000">Code: </font>%(code)s'
+            body += u'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+            body += u'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+            body += u'<font color="#00000">Contact: </font>%(contact)s'
+            body += u'<br><font color="#00000">Date: </font>%(date)s %(time)'
+            body += u's&nbsp;&nbsp;&nbsp;'
+            body += u'<font color="#00000">State: </font>%(state)s'
+            body += u'<br><font color="#00000">Subject: </font>%(subject)s'
+            body += u'<br><font color="#00000">Employee: </font>%(employee)s'
+            body += u'</font></div>'
+            body += u'<div align="left"><br/>%(description)s<hr/></div>'
             body = body % ({
                 'type': activity.activity_type.name,
                 'code': activity.code,
@@ -165,39 +109,13 @@ class Project(metaclass=PoolMeta):
                 'date_human': humanize.naturaltime(activity.dtstart),
                 'contact': (activity.contacts and activity.contacts[0].name
                     or ''),
-                'toggle_id': activity.id,
-                'attachments': attachs_str,
-                'description_body': body_str,
-                'description_previous': previous_str,
+                'description': description_text,
                 'state': activity.state,
                 'employee': (activity.employee and activity.employee.party.name
                     or ''),
                 })
             res.append(body)
-        return '''<html>
-        <head>
-        <style>
-        a {
-          background-color:lightgray;
-          margin-right:5px;
-          padding: 3px;
-          border-radius: 6px;
-          white-space: nowrap;
-        }
-        </style>
-        <script>
-        function toggle(id) {
-            div = document.getElementById(id);
-            if (div.style.display) {
-                div.style.display = '';
-            } else {
-                div.style.display = "none";
-            }
-        }
-        </script>
-        </head>
-        <body>%s</body></html>
-        ''' % ''.join(res)
+        return ''.join(res)
 
 
 class Activity(metaclass=PoolMeta):
