@@ -15,13 +15,13 @@ class WorkConfiguration(ModelSingleton, ModelSQL, ModelView,
     __name__ = 'work.configuration'
 
     email_activity_type = fields.Many2One('activity.type',
-        'E-mail Activity Type', required = True)
+        'E-mail Activity Type', required=True)
     email_activity_employee = fields.MultiValue(fields.Many2One(
             'company.employee', 'E-mail Activity Employee', help='Default'
             'employee for activities created from incoming e-mails if sender '
-            'e-mail does not correspond to any employee', required = True))
+            'e-mail does not correspond to any employee', required=True))
     email_activity_mailbox = fields.Many2One('electronic.mail.mailbox',
-        'E-mail Activity Mailbox', required = True)
+        'E-mail Activity Mailbox', required=True)
 
     @classmethod
     def multivalue_model(cls, field):
