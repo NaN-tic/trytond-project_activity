@@ -152,6 +152,8 @@ class Activity(metaclass=PoolMeta):
         default_employee = configuration.email_activity_employee
         default_activity_type = configuration.email_activity_type
         mailbox = configuration.email_activity_mailbox
+        if not mailbox:
+            return
 
         mails = ElectronicMail.search([
                 ('in_reply_to', '!=', None),
