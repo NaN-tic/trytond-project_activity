@@ -25,6 +25,10 @@ __all__ = ['ProjectReference', 'Activity', 'Project']
 
 EMAIL_PATTERN = r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+"
 
+def create_anchors(text):
+    return re.sub(r"((http|https):\/\/\S*)", r'<a href="\1" target="_blank" rel="noopener">\1</a>', text)
+
+
 @app.route('/<database_name>/ir/attachment/<int:record>',
     methods={'GET'})
 @app.auth_required
@@ -131,8 +135,10 @@ class Project(metaclass=PoolMeta):
             body_str = "\n".join(body_mail)
             previous_str = "\n".join(previous)
             body_str = html.escape(body_str)
+            body_str = create_anchors(body_str)
             body_str = '<br/>'.join(body_str.splitlines())
             previous_str = html.escape(previous_str)
+            previous_str = create_anchors(previous_str)
             previous_str = '<br/>'.join(previous_str.splitlines())
 
             # Original Fields
@@ -152,7 +158,7 @@ class Project(metaclass=PoolMeta):
             body += '</table></div>'
             body += '<div style="font-family: Sans-serif;">%(attachments)s</div>'
             body += '<div style="font-family: Sans-serif;"><br/>%(description_body)s</div>'
-            body += '''<a href="javascript:toggle('%(toggle_id)s');">...</a>'''
+            body += '''<a href="javascript:toggle('%(toggle_id)s');" class="dots">...</a>'''
             body += '<hr/>'
             body += '<div id="%(toggle_id)s" style="display:none; font-family: Sans-serif;"><br/>%(description_previous)s</div>'
             body += '</span>'
@@ -177,9 +183,9 @@ class Project(metaclass=PoolMeta):
         return '''<html>
         <head>
         <style>
-        a {
-          background-color:lightgray;
-          margin-right:5px;
+        .dots {
+          background-color: lightgray;
+          margin-right: 5px;
           padding: 3px;
           border-radius: 6px;
           white-space: nowrap;
