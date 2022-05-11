@@ -17,7 +17,6 @@ from trytond.wsgi import app
 from trytond.transaction import Transaction
 from werkzeug.wrappers import Response
 from werkzeug.exceptions import abort
-from trytond.transaction import Transaction
 from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
 
@@ -72,8 +71,9 @@ class Project(metaclass=PoolMeta):
     contact_name = fields.Function(fields.Char('Contact Name'),
         'get_activity_fields')
     resource = fields.Reference('Resource', selection='get_resource')
-    conversation = fields.Function(fields.Binary('Conversation'),
-        'get_conversation')
+    conversation = fields.Function(fields.Binary("Conversation",
+        filename='filename'), 'get_conversation')
+    filename = fields.Function(fields.Char("File Name"), 'get_filename')
 
     @classmethod
     def get_activity_fields(cls, works, names):
@@ -180,30 +180,34 @@ class Project(metaclass=PoolMeta):
                     or ''),
                 })
             res.append(body)
-        return '''<html>
-        <head>
-        <style>
-        .dots {
-          background-color: lightgray;
-          margin-right: 5px;
-          padding: 3px;
-          border-radius: 6px;
-          white-space: nowrap;
-        }
-        </style>
-        <script>
-        function toggle(id) {
-            div = document.getElementById(id);
-            if (div.style.display) {
-                div.style.display = '';
-            } else {
-                div.style.display = "none";
+        return '''<!DOCTYPE html>
+            <html>
+            <head>
+            <style>
+            .dots {
+              background-color: lightgray;
+              margin-right: 5px;
+              padding: 3px;
+              border-radius: 6px;
+              white-space: nowrap;
             }
-        }
-        </script>
-        </head>
-        <body>%s</body></html>
-        ''' % ''.join(res)
+            </style>
+            <script>
+            function toggle(id) {
+                div = document.getElementById(id);
+                if (div.style.display) {
+                    div.style.display = '';
+                } else {
+                    div.style.display = "none";
+                }
+            }
+            </script>
+            </head>
+            <body>%s</body></html>
+            ''' % ''.join(res)
+
+    def get_filename(self, name):
+        return 'conversation.html'
 
 
 class Activity(metaclass=PoolMeta):
