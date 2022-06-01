@@ -205,7 +205,7 @@ class Project(metaclass=PoolMeta):
             </head>
             <body>%s</body></html>
             ''' % ''.join(res)
-        return bytes(summary.encode())
+        return summary.encode()
 
     def get_filename(self, name):
         return 'conversation.html'
