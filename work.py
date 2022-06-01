@@ -180,7 +180,7 @@ class Project(metaclass=PoolMeta):
                     or ''),
                 })
             res.append(body)
-        return '''<!DOCTYPE html>
+        summary = '''<!DOCTYPE html>
             <html>
             <head>
             <style>
@@ -205,6 +205,7 @@ class Project(metaclass=PoolMeta):
             </head>
             <body>%s</body></html>
             ''' % ''.join(res)
+        return bytes(summary.encode())
 
     def get_filename(self, name):
         return 'conversation.html'
