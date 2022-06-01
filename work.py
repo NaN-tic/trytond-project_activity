@@ -205,6 +205,8 @@ class Project(metaclass=PoolMeta):
             </head>
             <body>%s</body></html>
             ''' % ''.join(res)
+        # TODO supports str as value of Binary field so sao should also
+        # https://bugs.tryton.org/issue11534
         return summary.encode()
 
     def get_filename(self, name):
