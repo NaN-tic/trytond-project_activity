@@ -72,8 +72,9 @@ class Project(metaclass=PoolMeta):
         'get_activity_fields')
     resource = fields.Reference('Resource', selection='get_resource')
     conversation = fields.Function(fields.Binary("Conversation",
-        filename='filename'), 'get_conversation')
-    filename = fields.Function(fields.Char("File Name"), 'get_filename')
+        filename='conversation_filename'), 'get_conversation')
+    conversation_filename = fields.Function(fields.Char("File Name"),
+        'get_conversation_filename')
 
     @classmethod
     def get_activity_fields(cls, works, names):
@@ -206,7 +207,7 @@ class Project(metaclass=PoolMeta):
             <body>%s</body></html>
             ''' % ''.join(res)
 
-    def get_filename(self, name):
+    def get_conversation_filename(self, name):
         return 'conversation.html'
 
 
