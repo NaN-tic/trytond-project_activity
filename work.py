@@ -181,7 +181,7 @@ class Project(metaclass=PoolMeta):
                     or ''),
                 })
             res.append(body)
-        return '''<!DOCTYPE html>
+        summary = '''<!DOCTYPE html>
             <html>
             <head>
             <style>
@@ -206,6 +206,9 @@ class Project(metaclass=PoolMeta):
             </head>
             <body>%s</body></html>
             ''' % ''.join(res)
+        # TODO supports str as value of Binary field so sao should also
+        # https://bugs.tryton.org/issue11534
+        return summary.encode()
 
     def get_conversation_filename(self, name):
         return 'conversation.html'
