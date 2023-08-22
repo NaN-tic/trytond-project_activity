@@ -1,17 +1,13 @@
 # The COPYRIGHT file at the top level of this repository contains the full
 # copyright notices and license terms.
 from trytond.model import ModelView, ModelSQL, ModelSingleton, fields
-from trytond.pool import Pool
+from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Eval
 from trytond.modules.company.model import (
     CompanyMultiValueMixin, CompanyValueMixin)
 
-__all__ = ['WorkConfiguration', 'ConfigurationEmployee']
 
-
-class WorkConfiguration(ModelSingleton, ModelSQL, ModelView,
-        CompanyMultiValueMixin):
-    'Work Configuration'
+class WorkConfiguration(metaclass=PoolMeta):
     __name__ = 'work.configuration'
 
     email_activity_type = fields.Many2One('activity.type',
