@@ -156,13 +156,13 @@ class Project(metaclass=PoolMeta):
             body += '<td>Code: <span style="color:#778899;">%(code)s</span></td>'
             body += '<td>Contact: <span style="color:#778899;">%(contact)s</span></td></tr>'
             body += '<tr><td>Date: <span style="color:#778899;">%(date)s %(time)s</span></td>'
-            body += f'<td>State: <span style="color:#778899;">{activity.state}</span></td></tr>'
+            body += '<td>State: <span style="color:#778899;">%(activity)s</span></td></tr>'
             body += '<tr><td colspan="0">Subject: <span style="color:#778899;">%(subject)s</span></td></tr>'
             body += '<tr><td colspan="0">Employee: <span style="color:#778899;">%(employee)s</span></td></tr>'
             body += '</table></div>'
-            body += f'<div style="font-family: Sans-serif;">{attachs_str}</div>'
-            body += f'<div style="font-family: Sans-serif;"><br/>{body_str}</div>'
-            body += f'{dots}'
+            body += '<div style="font-family: Sans-serif;">%(attachs_str)s</div>'
+            body += '<div style="font-family: Sans-serif;"><br/>%(body_str)s</div>'
+            body += '%(dots)s'
             body += '</span>'
             body = body % ({
                 'type': activity.activity_type.name,
@@ -175,6 +175,10 @@ class Project(metaclass=PoolMeta):
                     or ''),
                 'employee': (activity.employee and activity.employee.party.name
                     or ''),
+                'dots': dots,
+                'activity': activity.state,
+                'attachs_str': attachs_str,
+                'body_str': body_str,
                 })
             res.append(body)
         summary = '''<!DOCTYPE html>
