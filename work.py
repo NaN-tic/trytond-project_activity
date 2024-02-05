@@ -109,15 +109,14 @@ class Project(metaclass=PoolMeta):
         return res
 
     def get_conversation(self, name):
-        res = []
-        body_mail = []
-        previous = []
-        attachment_names = []
         pool = Pool()
         Attachment = pool.get('ir.attachment')
 
+        res = []
         for activity in self.activities:
             description_text = activity.description or ''
+            previous = []
+            body_mail = []
             for line in description_text.splitlines():
                 if line.startswith('>'):
                     previous.append(line)
