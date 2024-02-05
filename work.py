@@ -133,16 +133,20 @@ class Project(metaclass=PoolMeta):
             attachs_str = ("<div style='line-height: 2'>"
                     + " ".join(attachment_names) + "</div>")
             body_str = "\n".join(body_mail)
-            previous_str = "\n".join(previous)
             body_str = html.escape(body_str)
             body_str = create_anchors(body_str)
             body_str = '<br/>'.join(body_str.splitlines())
-            previous_str = html.escape(previous_str)
-            previous_str = create_anchors(previous_str)
-            previous_str = '<br/>'.join(previous_str.splitlines())
 
-            # Original Fields
-            # type, date, contact, code, subject, description
+            previous_str = "\n".join(previous)
+            if previous_str.strip():
+                previous_str = html.escape(previous_str)
+                previous_str = create_anchors(previous_str)
+                previous_str = '<br/>'.join(previous_str.splitlines())
+                dots =  f'''<a href="javascript:toggle('{activity.id}');" class="dots">...</a>'''
+                dots += '<hr/>'
+                dots += f'<div id="{activity.id}" style="display:none; font-family: Sans-serif;"><br/>{previous_str}</div>'
+            else:
+                dots = ''
 
             body = "\n"
             body += '<span style="font-size:13px;">'
@@ -152,15 +156,13 @@ class Project(metaclass=PoolMeta):
             body += '<td>Code: <span style="color:#778899;">%(code)s</span></td>'
             body += '<td>Contact: <span style="color:#778899;">%(contact)s</span></td></tr>'
             body += '<tr><td>Date: <span style="color:#778899;">%(date)s %(time)s</span></td>'
-            body += '<td>State: <span style="color:#778899;">%(state)s</span></td></tr>'
+            body += f'<td>State: <span style="color:#778899;">{activity.state}</span></td></tr>'
             body += '<tr><td colspan="0">Subject: <span style="color:#778899;">%(subject)s</span></td></tr>'
             body += '<tr><td colspan="0">Employee: <span style="color:#778899;">%(employee)s</span></td></tr>'
             body += '</table></div>'
-            body += '<div style="font-family: Sans-serif;">%(attachments)s</div>'
-            body += '<div style="font-family: Sans-serif;"><br/>%(description_body)s</div>'
-            body += '''<a href="javascript:toggle('%(toggle_id)s');" class="dots">...</a>'''
-            body += '<hr/>'
-            body += '<div id="%(toggle_id)s" style="display:none; font-family: Sans-serif;"><br/>%(description_previous)s</div>'
+            body += f'<div style="font-family: Sans-serif;">{attachs_str}</div>'
+            body += f'<div style="font-family: Sans-serif;"><br/>{body_str}</div>'
+            body += f'{dots}'
             body += '</span>'
             body = body % ({
                 'type': activity.activity_type.name,
@@ -171,11 +173,6 @@ class Project(metaclass=PoolMeta):
                 'date_human': humanize.naturaltime(activity.dtstart),
                 'contact': (activity.contacts and activity.contacts[0].name
                     or ''),
-                'toggle_id': activity.id,
-                'attachments': attachs_str,
-                'description_body': body_str,
-                'description_previous': previous_str,
-                'state': activity.state,
                 'employee': (activity.employee and activity.employee.party.name
                     or ''),
                 })
