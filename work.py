@@ -19,6 +19,7 @@ from werkzeug.wrappers import Response
 from werkzeug.exceptions import abort
 from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
+from trytond.modules.widgets import tools
 
 __all__ = ['ProjectReference', 'Activity', 'Project']
 
@@ -118,13 +119,14 @@ class Project(metaclass=PoolMeta):
 
         for activity in self.activities:
             description_text = activity.description or ''
-            for line in description_text.splitlines():
-                if line.startswith('>'):
-                    previous.append(line)
-                else:
-                    body_mail += previous
-                    previous = []
-                    body_mail.append(line)
+            if len(description_text) > 0:
+                for line in tools.js_to_text(description_text).split('\\n'):
+                    if line.startswith('>'):
+                        previous.append(line)
+                    else:
+                        body_mail += previous
+                        previous = []
+                        body_mail.append(line)
 
             attachments = Attachment.search([('resource.id', '=', activity.id,
                     'activity.activity')])
@@ -179,7 +181,7 @@ class Project(metaclass=PoolMeta):
                 'state': activity.state,
                 'employee': (activity.employee and activity.employee.party.name
                     or ''),
-                })
+                })        
             res.append(body)
         summary = '''<!DOCTYPE html>
             <html>
