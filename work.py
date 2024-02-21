@@ -5,6 +5,7 @@ import html
 import humanize
 import re
 import mimetypes
+from itertools import chain
 try:
     from http import HTTPStatus
 except ImportError:
