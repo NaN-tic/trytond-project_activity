@@ -314,3 +314,27 @@ class Activity(metaclass=PoolMeta):
             Work.write(*new_args)
         if mails:
             ElectronicMail.save(mails)
+
+    @classmethod
+    def create(cls, vlist):
+        res = super().create(vlist)
+        cls.sync_project_contacts(res)
+        return res
+
+    @classmethod
+    def write(cls, *args):
+        super().write(*args)
+        cls.sync_project_contacts(chain(args[::2]))
+
+    @classmethod
+    def sync_project_contacts(cls, activity):
+        pool = Pool()
+        Work = pool.get('project.work')
+        to_save = []
+        for activities in activity:
+            if isinstance(activities.resource, Work):
+                for contact in activities.contacts:
+                    if contact not in activities.resource.contacts:
+                        activities.resource.contacts += (contact,)
+                to_save.append(activities.resource)
+        Work.save(to_save)
