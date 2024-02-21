@@ -325,17 +325,17 @@ class Activity(metaclass=PoolMeta):
     @classmethod
     def write(cls, *args):
         super().write(*args)
-        cls.sync_project_contacts(chain(args[::2]))
+        cls.sync_project_contacts(list(chain(*args[::2])))
 
     @classmethod
-    def sync_project_contacts(cls, activity):
+    def sync_project_contacts(cls, activities):
         pool = Pool()
         Work = pool.get('project.work')
         to_save = []
-        for activities in activity:
-            if isinstance(activities.resource, Work):
-                for contact in activities.contacts:
-                    if contact not in activities.resource.contacts:
-                        activities.resource.contacts += (contact,)
-                to_save.append(activities.resource)
+        for activity in activities:
+            if isinstance(activity.resource, Work):
+                for contact in activity.contacts:
+                    if contact not in activity.resource.contacts:
+                        activity.resource.contacts += (contact,)
+                to_save.append(activity.resource)
         Work.save(to_save)
