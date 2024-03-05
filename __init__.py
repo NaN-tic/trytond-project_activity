@@ -14,4 +14,9 @@ def register():
         configuration.WorkConfiguration,
         configuration.ConfigurationEmployee,
         ir.Cron,
+        work.CreateResourceStart,
         module='project_activity', type_='model')
+
+    Pool.register(
+        work.CreateResource,
+        module='project_activity', type_='wizard')

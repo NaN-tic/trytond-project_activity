@@ -62,6 +62,24 @@ contains the full copyright notices and license terms. -->
             <field name="name">activity_form</field>
         </record>
 
+        <!-- Create Resource Wizard-->
+        <record model="ir.ui.view" id="create_resource_start_view_form">
+            <field name="model">activity.create_resource.start</field>
+            <field name="type">form</field>
+            <field name="name">create_resource_start_form</field>
+        </record>
+
+        <record model="ir.model.button" id="create_resource_button">
+            <field name="name">create_resource</field>
+            <field name="string">Create Resource</field>
+            <field name="model" search="[('model', '=', 'activity.activity')]"/>
+        </record>
+
+        <record model="ir.action.wizard" id="act_create_resource_wizard">
+            <field name="name">Create Resource</field>
+            <field name="wiz_name">activity.create_resource</field>
+        </record>
+
         <!-- Menus -->
         <menuitem action="act_project_activity_reference"
             id="menu_project_reference"
