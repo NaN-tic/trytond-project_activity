@@ -12,7 +12,7 @@ except ImportError:
     from http import client as HTTPStatus
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
-from trytond.pyson import Eval
+from trytond.pyson import Eval, Bool
 
 from trytond.wsgi import app
 from trytond.transaction import Transaction
@@ -20,6 +20,8 @@ from werkzeug.wrappers import Response
 from werkzeug.exceptions import abort
 from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
+from trytond.wizard import (
+    Button, StateAction, StateView, Wizard)
 
 __all__ = ['ProjectReference', 'Activity', 'Project']
 
@@ -339,3 +341,119 @@ class Activity(metaclass=PoolMeta):
                         activity.resource.contacts += (contact,)
                 to_save.append(activity.resource)
         Work.save(to_save)
+
+    @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls._buttons.update({
+                'create_resource': {
+                    'icon': 'tryton-ok',
+                    'invisible': ~Bool(Eval('party')) | Bool(Eval('resource'))
+                }
+                })
+
+    @classmethod
+    @ModelView.button_action('project_activity.act_create_resource_wizard')
+    def create_resource(cls, activities):
+        pass
+
+class CreateResource(Wizard):
+    'Create Resource'
+    __name__ = 'activity.create_resource'
+    start = StateView('activity.create_resource.start',
+        'project_activity.create_resource_start_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Next', 'open_task', 'tryton-next')
+            ])
+    open_task = StateAction('project.act_task_form')
+
+    def default_start(self, fields):
+        pool = Pool()
+        Work = pool.get('project.work')
+
+        tasks = Work.search([
+            ('type', '=', 'task'),
+            ('party.id', '=', self.record.party.id),
+            ['OR',
+                [
+                    ('status.progress', '!=', '1'),
+                ], [
+                    ('status.progress', '=', None),
+                ],
+            ],
+            ])
+        projects = Work.search([
+            ('type', '=', 'project'),
+            ('party.id', '=', self.record.party.id),
+            ['OR',
+                [
+                    ('status.progress', '!=', '1'),
+                ], [
+                    ('status.progress', '=', None),
+                ],
+            ],
+            ])
+        default = {}
+        default['tasks'] = [task.id for task in tasks]
+        default['activity'] = self.record.id
+        default['party'] = self.record.party.id
+        default['project'] = projects[0].id if projects else None
+        return default
+
+    def get_task(self):
+        pool = Pool()
+        Work = pool.get('project.work')
+        task = Work()
+
+        activities = self.records
+        task.parent = self.start.project
+        task.name = self.record.subject
+        task.activities = activities
+        task.party = self.record.party
+        task.comment = self.record.description
+        task.resource = self.record
+        return task
+
+    def do_open_task(self, action):
+        if not self.start.task:
+            task = self.get_task()
+            task.save()
+        else:
+            task = self.start.task
+            self.record.resource = task
+            self.record.save()
+
+        data = {'res_id': [task.id], 'views': action['views'].reverse()}
+        return action, data
+
+
+class CreateResourceStart(ModelView):
+    'Create Resource'
+    __name__ = 'activity.create_resource.start'
+    activity = fields.Many2One('activity.activity', "Activity", readonly=True)
+    party = fields.Many2One('party.party', "Party", readonly=True)
+    project = fields.Many2One('project.work', "Project",
+        domain=[
+            ('type', '=', 'project'),
+            ('party', '=', Eval('party', -1)),
+            ['OR',
+                [
+                    ('status.progress', '!=', '1'),
+                ], [
+                    ('status.progress', '=', None),
+                ],
+                ],
+                ], depends = ['party'])
+    task = fields.Many2One('project.work', "Task",
+        domain=[
+            ('type', '=', 'task'),
+            ('party', '=', Eval('party', -1)),
+            ['OR',
+                [
+                    ('status.progress', '!=', '1'),
+                ], [
+                    ('status.progress', '=', None),
+                ],
+                ],
+                ], depends = ['party'])
+    tasks = fields.One2Many('project.work', None, "Tasks", readonly=True)
