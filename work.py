@@ -407,6 +407,7 @@ class CreateResource(Wizard):
 
         activities = self.records
         task.parent = self.start.project
+        task.on_change_parent()
         task.name = self.record.subject
         task.activities = activities
         task.party = self.record.party
