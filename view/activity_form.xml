@@ -7,7 +7,7 @@ contains the full copyright notices and license terms. -->
             <field name="tasks" colspan="4"/>
         </page>
     </xpath>
-    <xpath expr="//group[@id='buttons']" position="inside">
+    <xpath expr="//group[@id='buttons']/button[@name='guess']" position="after">
         <button name="create_resource"/>
     </xpath>
 </data>
