@@ -53,6 +53,7 @@ def attachment(request, pool, record):
     response.headers.add('Content-Length', len(attachment.data))
     return response
 
+
 class ProjectReference(ModelSQL, ModelView):
     'Project Reference'
     __name__ = "project.reference"
@@ -322,12 +323,27 @@ class Activity(metaclass=PoolMeta):
     def create(cls, vlist):
         res = super().create(vlist)
         cls.sync_project_contacts(res)
+        cls.update_status_on_stakeholder_action(res)
         return res
 
     @classmethod
     def write(cls, *args):
         super().write(*args)
         cls.sync_project_contacts(list(chain(*args[::2])))
+        cls.update_status_on_stakeholder_action(list(chain(*args[::2])))
+
+    @classmethod
+    def update_status_on_stakeholder_action(cls, activities):
+        pool = Pool()
+        Work = pool.get('project.work')
+        for activity in activities:
+            if activity.activity_type or activity.resource:
+                if isinstance(activity.resource, Work) and activity.activity_type.update_status_on_stakeholder_action:
+                    work = activity.resource
+                    new_status = work.status.check_status_for_stakeholder_action()
+                    if new_status:
+                        work.status = new_status
+                        work.save()
 
     @classmethod
     def sync_project_contacts(cls, activities):
@@ -370,18 +386,6 @@ class CreateResource(Wizard):
     def default_start(self, fields):
         pool = Pool()
         Work = pool.get('project.work')
-
-        tasks = Work.search([
-            ('type', '=', 'task'),
-            ('party.id', '=', self.record.party.id),
-            ['OR',
-                [
-                    ('status.progress', '!=', '1'),
-                ], [
-                    ('status.progress', '=', None),
-                ],
-            ],
-            ])
         projects = Work.search([
             ('type', '=', 'project'),
             ('party.id', '=', self.record.party.id),
@@ -394,7 +398,6 @@ class CreateResource(Wizard):
             ],
             ])
         default = {}
-        default['tasks'] = [task.id for task in tasks]
         default['activity'] = self.record.id
         default['party'] = self.record.party.id
         default['project'] = projects[0].id if projects else None
@@ -412,7 +415,6 @@ class CreateResource(Wizard):
         task.activities = activities
         task.party = self.record.party
         task.comment = self.record.description
-        task.resource = self.record
         return task
 
     def do_open_task(self, action):
@@ -458,3 +460,22 @@ class CreateResourceStart(ModelView):
                 ],
                 ], depends = ['party'])
     tasks = fields.One2Many('project.work', None, "Tasks", readonly=True)
+
+
+class WorkStatus(metaclass=PoolMeta):
+    'Work Status'
+    __name__ = 'project.work.status'
+
+    status_on_stakeholder_action = fields.Many2One('project.work.status', 'Stakeholder Action')
+
+    def check_status_for_stakeholder_action(self):
+        if self.status_on_stakeholder_action:
+            return self.status_on_stakeholder_action
+        return
+
+
+class ActivityType(metaclass=PoolMeta):
+    'Activity Type'
+    __name__ = "activity.type"
+
+    update_status_on_stakeholder_action = fields.Boolean("Update Status on StakeHolder Action")
