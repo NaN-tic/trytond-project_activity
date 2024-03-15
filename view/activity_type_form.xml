@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!--The COPYRIGHT file at the top level of this repository
+contains the full copyright notices and license terms. -->
+<data>
+    <xpath expr="/form/field[@name='name']" position="after">
+        <label name="update_status_on_stakeholder_action"/>
+        <field name="update_status_on_stakeholder_action"/>
+    </xpath>
+</data>

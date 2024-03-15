@@ -1,0 +1,6 @@
+<data>
+    <xpath expr="//group[@id='progress']" position="after">
+        <label name="status_on_stakeholder_action"/>
+        <field name="status_on_stakeholder_action"/>
+    </xpath>
+</data>
