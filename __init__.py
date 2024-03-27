@@ -17,6 +17,8 @@ def register():
         work.CreateResourceStart,
         work.WorkStatus,
         work.ActivityType,
+        work.ActivityTimeSheetSync,
+        work.TimesheetLine,
         module='project_activity', type_='model')
 
     Pool.register(

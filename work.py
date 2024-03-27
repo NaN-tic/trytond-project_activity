@@ -5,6 +5,7 @@ import html
 import humanize
 import re
 import mimetypes
+from datetime import time, datetime
 from itertools import chain
 try:
     from http import HTTPStatus
@@ -13,7 +14,7 @@ except ImportError:
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Bool
-
+from trytond.i18n import gettext
 from trytond.wsgi import app
 from trytond.transaction import Transaction
 from werkzeug.wrappers import Response
@@ -22,6 +23,8 @@ from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
 from trytond.wizard import (
     Button, StateAction, StateView, Wizard)
+from trytond.modules.electronic_mail_activity.activity import SendActivityMailMixin
+from trytond.exceptions import UserWarning
 
 __all__ = ['ProjectReference', 'Activity', 'Project']
 
@@ -61,7 +64,7 @@ class ProjectReference(ModelSQL, ModelView):
     model = fields.Many2One('ir.model', 'Model', required=True)
 
 
-class Project(metaclass=PoolMeta):
+class Project(SendActivityMailMixin, metaclass=PoolMeta):
     __name__ = 'project.work'
 
     activities = fields.One2Many('activity.activity', 'resource',
@@ -221,6 +224,8 @@ class Project(metaclass=PoolMeta):
 class Activity(metaclass=PoolMeta):
     __name__ = 'activity.activity'
     tasks = fields.One2Many('project.work', 'resource', 'Tasks')
+    timesheet_line = fields.One2One('activity.activity-timesheet.line',
+        'activity', 'timesheet_line', "Timesheet Line")
 
     @classmethod
     def default_party(cls):
@@ -324,6 +329,7 @@ class Activity(metaclass=PoolMeta):
         res = super().create(vlist)
         cls.sync_project_contacts(res)
         cls.update_status_on_stakeholder_action(res)
+        cls.sync_timesheetline(res)
         return res
 
     @classmethod
@@ -331,6 +337,7 @@ class Activity(metaclass=PoolMeta):
         super().write(*args)
         cls.sync_project_contacts(list(chain(*args[::2])))
         cls.update_status_on_stakeholder_action(list(chain(*args[::2])))
+        cls.sync_timesheetline(list(chain(*args[::2])))
 
     @classmethod
     def update_status_on_stakeholder_action(cls, activities):
@@ -338,7 +345,8 @@ class Activity(metaclass=PoolMeta):
         Work = pool.get('project.work')
         for activity in activities:
             if activity.activity_type or activity.resource:
-                if isinstance(activity.resource, Work) and activity.activity_type.update_status_on_stakeholder_action:
+                if (isinstance(activity.resource, Work)
+                    and activity.activity_type.update_status_on_stakeholder_action):
                     work = activity.resource
                     new_status = work.status.check_status_for_stakeholder_action()
                     if new_status:
@@ -359,6 +367,83 @@ class Activity(metaclass=PoolMeta):
         Work.save(to_save)
 
     @classmethod
+    def sync_timesheetline(cls, activities):
+        pool = Pool()
+        Work = pool.get('project.work')
+        TimesheetLine = pool.get('timesheet.line')
+        Warning = pool.get('res.user.warning')
+
+        to_save = []
+        for activity in activities:
+            if not isinstance(activity.resource, Work):
+                if activity.timesheet_line:
+                    key = 'no_resource_assigned_%d'  % activity.id
+                    if Warning.check(key):
+                        raise UserWarning(key, gettext(
+                            'project_activity.msg_no_resource',
+                            timesheet=activity.timesheet_line.rec_name))
+                    TimesheetLine.delete([activity.timesheet_line])
+                continue
+
+            if not activity.timesheet_line:
+                if not activity.duration:
+                    continue
+                if not activity.resource.timesheet_works:
+                    key = 'no_timesheet_work_%d' % activity.id
+                    if Warning.check(key):
+                        raise UserWarning(key, gettext(
+                            'project_activity.msg_no_timesheet_works'))
+                    continue
+
+                timesheet_line = TimesheetLine()
+                timesheet_line.activity = activity
+                timesheet_line.work = activity.resource.timesheet_works[0]
+            else:
+                timesheet_line = activity.timesheet_line
+                if not activity.duration and timesheet_line:
+                    key = 'no_duration_%d' % activity.id
+                    if Warning.check(key):
+                        raise UserWarning(key, gettext(
+                            'project_activity.msg_no_duration',
+                            activity=activity.rec_name,
+                            timesheet=timesheet_line.rec_name))
+                    TimesheetLine.delete([timesheet_line])
+                    continue
+
+            for attribute in ['company', 'employee', 'duration', 'date']:
+                value = getattr(activity, attribute)
+                if getattr(timesheet_line, attribute, None) != value:
+                    setattr(timesheet_line, attribute, value)
+
+            if timesheet_line.work != activity.resource.timesheet_works[0]:
+                timesheet_line.work = activity.resource.timesheet_works[0]
+
+            if (hasattr(timesheet_line, 'start')
+                    and (timesheet_line.start or timesheet_line.end)):
+                timesheet_line.start = None
+                timesheet_line.end = None
+
+            to_save.append(timesheet_line)
+
+        TimesheetLine.save(to_save)
+
+    @classmethod
+    def delete(cls, activities):
+        TimesheetLine = Pool().get('timesheet.line')
+        Warning = Pool().get('res.user.warning')
+
+        to_delete = [x.timesheet_line for x in activities if x.timesheet_line]
+        if to_delete:
+            key = Warning.format('delete_activity_and_line', to_delete)
+            if Warning.check(key):
+                activity = ', '.join([x.rec_name for x in activities[:5]])
+                raise UserWarning(key, gettext(
+                    'project_activity.msg_delete_act_and_tl',
+                    activity=activity))
+            TimesheetLine.delete(to_delete)
+        super().delete(activities)
+
+    @classmethod
     def __setup__(cls):
         super().__setup__()
         cls._buttons.update({
@@ -372,6 +457,7 @@ class Activity(metaclass=PoolMeta):
     @ModelView.button_action('project_activity.act_create_resource_wizard')
     def create_resource(cls, activities):
         pass
+
 
 class CreateResource(Wizard):
     'Create Resource'
@@ -466,7 +552,8 @@ class WorkStatus(metaclass=PoolMeta):
     'Work Status'
     __name__ = 'project.work.status'
 
-    status_on_stakeholder_action = fields.Many2One('project.work.status', 'Stakeholder Action')
+    status_on_stakeholder_action = fields.Many2One('project.work.status',
+        'Stakeholder Action')
 
     def check_status_for_stakeholder_action(self):
         if self.status_on_stakeholder_action:
@@ -478,4 +565,73 @@ class ActivityType(metaclass=PoolMeta):
     'Activity Type'
     __name__ = "activity.type"
 
-    update_status_on_stakeholder_action = fields.Boolean("Update Status on StakeHolder Action")
+    update_status_on_stakeholder_action = fields.Boolean(
+        "Update Status on StakeHolder Action")
+
+
+class ActivityTimeSheetSync(ModelSQL):
+    'Activity Timesheet Sync'
+    __name__ = 'activity.activity-timesheet.line'
+    activity = fields.Many2One('activity.activity', 'Activities', required=True,
+        ondelete='CASCADE')
+    timesheet_line = fields.Many2One('timesheet.line', 'Timesheet Lines',
+        required=True, ondelete='CASCADE')
+
+
+class TimesheetLine(metaclass=PoolMeta):
+    __name__ = 'timesheet.line'
+    activity = fields.One2One('activity.activity-timesheet.line',
+        'timesheet_line', 'activity', "Activity")
+
+    @classmethod
+    def write(cls, *args):
+        super().write(*args)
+        cls.sync_activity(list(chain(*args[::2])))
+
+    @classmethod
+    def create(cls, vlist):
+        res = super().create(vlist)
+        cls.sync_activity(res)
+        return res
+
+    @classmethod
+    def delete(cls, lines):
+        pool = Pool()
+        Activity = pool.get('activity.activity')
+
+        to_save = []
+        for line in lines:
+            if line.activity:
+                line.activity.duration = None
+                to_save.append(line.activity)
+
+        super().delete(lines)
+
+        Activity.save(to_save)
+
+    @classmethod
+    def sync_activity(cls, lines):
+        pool = Pool()
+        Activity = pool.get('activity.activity')
+        Warning = pool.get('res.user.warning')
+
+        to_save = []
+        for line in lines:
+            if not line.activity:
+                continue
+            for attribute in ['company', 'employee', 'duration', 'date']:
+                value = getattr(line, attribute)
+                if getattr(line.activity, attribute) != value:
+                    setattr(line.activity, attribute, value)
+
+            if line.work.origin != line.activity.resource:
+                key = 'changing_activity_%d'  % line.id
+                if Warning.check(key):
+                    raise UserWarning(key, gettext(
+                        'project_activity.msg_change_activity',
+                        activity=line.activity.rec_name,
+                        timesheet=line.rec_name))
+                line.activity.resource = line.work.origin
+
+            to_save.append(line.activity)
+        Activity.save(to_save)

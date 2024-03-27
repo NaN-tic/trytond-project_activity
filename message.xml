@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton. The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<tryton>
+    <data grouped="1">
+        <record model="ir.message" id="msg_no_timesheet_works">
+            <field name="text">The resource %(project)s doesn't have any timesheet work. You won't be able to register the worked hours. Do you wish to continue?</field>
+        </record>
+
+        <record model="ir.message" id="msg_no_resource">
+            <field name="text">If you don't assign a resource to this activity, all work time registered on the timesheet line %(timesheet)s will be lost. Are you sure?</field>
+        </record>
+
+        <record model="ir.message" id="msg_delete_act_and_tl">
+            <field name="text">Deleting the activity/ies %(activity)s will unregister all the work time for these. Do you wish to continue?</field>
+        </record>
+
+        <record model="ir.message" id="msg_no_duration">
+            <field name="text">Setting the activity %(activity)s with no duration will result in losing these timesheet lines: %(timesheet)s. Do you wish to proceed?</field>
+        </record>
+
+        <record model="ir.message" id="msg_change_activity">
+            <field name="text">Changing the work of the timesheet line %(timesheet)s will change the activity %(activity)s. Do you wish to proceed?</field>
+        </record>
+    </data>
+</tryton>
