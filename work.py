@@ -5,14 +5,16 @@ import html
 import humanize
 import re
 import mimetypes
+from datetime import time, datetime
+from itertools import chain
 try:
     from http import HTTPStatus
 except ImportError:
     from http import client as HTTPStatus
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
-from trytond.pyson import Eval
-
+from trytond.pyson import Eval, Bool
+from trytond.i18n import gettext
 from trytond.wsgi import app
 from trytond.transaction import Transaction
 from werkzeug.wrappers import Response
@@ -20,8 +22,10 @@ from werkzeug.exceptions import abort
 from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
 from trytond.modules.widgets import tools
-
-__all__ = ['ProjectReference', 'Activity', 'Project']
+from trytond.wizard import (
+    Button, StateAction, StateView, Wizard)
+from trytond.modules.electronic_mail_activity.activity import SendActivityMailMixin
+from trytond.exceptions import UserWarning
 
 EMAIL_PATTERN = r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+"
 
@@ -51,6 +55,7 @@ def attachment(request, pool, record):
     response.headers.add('Content-Length', len(attachment.data))
     return response
 
+
 class ProjectReference(ModelSQL, ModelView):
     'Project Reference'
     __name__ = "project.reference"
@@ -58,7 +63,7 @@ class ProjectReference(ModelSQL, ModelView):
     model = fields.Many2One('ir.model', 'Model', required=True)
 
 
-class Project(metaclass=PoolMeta):
+class Project(SendActivityMailMixin, metaclass=PoolMeta):
     __name__ = 'project.work'
 
     activities = fields.One2Many('activity.activity', 'resource',
@@ -110,13 +115,10 @@ class Project(metaclass=PoolMeta):
         return res
 
     def get_conversation(self, name):
-        res = []
-        body_mail = []
-        previous = []
-        attachment_names = []
         pool = Pool()
         Attachment = pool.get('ir.attachment')
 
+        res = []
         for activity in self.activities:
             description_text = activity.description or ''
             if len(description_text) > 0:
@@ -136,16 +138,20 @@ class Project(metaclass=PoolMeta):
             attachs_str = ("<div style='line-height: 2'>"
                     + " ".join(attachment_names) + "</div>")
             body_str = "\n".join(body_mail)
-            previous_str = "\n".join(previous)
             body_str = html.escape(body_str)
             body_str = create_anchors(body_str)
             body_str = '<br/>'.join(body_str.splitlines())
-            previous_str = html.escape(previous_str)
-            previous_str = create_anchors(previous_str)
-            previous_str = '<br/>'.join(previous_str.splitlines())
 
-            # Original Fields
-            # type, date, contact, code, subject, description
+            previous_str = "\n".join(previous)
+            if previous_str.strip():
+                previous_str = html.escape(previous_str)
+                previous_str = create_anchors(previous_str)
+                previous_str = '<br/>'.join(previous_str.splitlines())
+                dots =  f'''<a href="javascript:toggle('{activity.id}');" class="dots">...</a>'''
+                dots += '<hr/>'
+                dots += f'<div id="{activity.id}" style="display:none; font-family: Sans-serif;"><br/>{previous_str}</div>'
+            else:
+                dots = ''
 
             body = "\n"
             body += '<span style="font-size:13px;">'
@@ -155,15 +161,13 @@ class Project(metaclass=PoolMeta):
             body += '<td>Code: <span style="color:#778899;">%(code)s</span></td>'
             body += '<td>Contact: <span style="color:#778899;">%(contact)s</span></td></tr>'
             body += '<tr><td>Date: <span style="color:#778899;">%(date)s %(time)s</span></td>'
-            body += '<td>State: <span style="color:#778899;">%(state)s</span></td></tr>'
+            body += '<td>State: <span style="color:#778899;">%(activity)s</span></td></tr>'
             body += '<tr><td colspan="0">Subject: <span style="color:#778899;">%(subject)s</span></td></tr>'
             body += '<tr><td colspan="0">Employee: <span style="color:#778899;">%(employee)s</span></td></tr>'
             body += '</table></div>'
-            body += '<div style="font-family: Sans-serif;">%(attachments)s</div>'
-            body += '<div style="font-family: Sans-serif;"><br/>%(description_body)s</div>'
-            body += '''<a href="javascript:toggle('%(toggle_id)s');" class="dots">...</a>'''
-            body += '<hr/>'
-            body += '<div id="%(toggle_id)s" style="display:none; font-family: Sans-serif;"><br/>%(description_previous)s</div>'
+            body += '<div style="font-family: Sans-serif;">%(attachs_str)s</div>'
+            body += '<div style="font-family: Sans-serif;"><br/>%(body_str)s</div>'
+            body += '%(dots)s'
             body += '</span>'
             body = body % ({
                 'type': activity.activity_type.name,
@@ -174,14 +178,9 @@ class Project(metaclass=PoolMeta):
                 'date_human': humanize.naturaltime(activity.dtstart),
                 'contact': (activity.contacts and activity.contacts[0].name
                     or ''),
-                'toggle_id': activity.id,
-                'attachments': attachs_str,
-                'description_body': body_str,
-                'description_previous': previous_str,
-                'state': activity.state,
                 'employee': (activity.employee and activity.employee.party.name
                     or ''),
-                })        
+                })
             res.append(body)
         summary = '''<!DOCTYPE html>
             <html>
@@ -219,6 +218,8 @@ class Project(metaclass=PoolMeta):
 class Activity(metaclass=PoolMeta):
     __name__ = 'activity.activity'
     tasks = fields.One2Many('project.work', 'resource', 'Tasks')
+    timesheet_line = fields.One2One('activity.activity-timesheet.line',
+        'activity', 'timesheet_line', "Timesheet Line")
 
     @classmethod
     def default_party(cls):
@@ -316,3 +317,315 @@ class Activity(metaclass=PoolMeta):
             Work.write(*new_args)
         if mails:
             ElectronicMail.save(mails)
+
+    @classmethod
+    def create(cls, vlist):
+        res = super().create(vlist)
+        cls.sync_project_contacts(res)
+        cls.update_status_on_stakeholder_action(res)
+        cls.sync_timesheetline(res)
+        return res
+
+    @classmethod
+    def write(cls, *args):
+        super().write(*args)
+        cls.sync_project_contacts(list(chain(*args[::2])))
+        cls.update_status_on_stakeholder_action(list(chain(*args[::2])))
+        cls.sync_timesheetline(list(chain(*args[::2])))
+
+    @classmethod
+    def update_status_on_stakeholder_action(cls, activities):
+        pool = Pool()
+        Work = pool.get('project.work')
+        for activity in activities:
+            if activity.activity_type or activity.resource:
+                if (isinstance(activity.resource, Work)
+                    and activity.activity_type.update_status_on_stakeholder_action):
+                    work = activity.resource
+                    new_status = work.status.check_status_for_stakeholder_action()
+                    if new_status:
+                        work.status = new_status
+                        work.save()
+
+    @classmethod
+    def sync_project_contacts(cls, activities):
+        pool = Pool()
+        Work = pool.get('project.work')
+        to_save = []
+        for activity in activities:
+            if isinstance(activity.resource, Work):
+                for contact in activity.contacts:
+                    if contact not in activity.resource.contacts:
+                        activity.resource.contacts += (contact,)
+                to_save.append(activity.resource)
+        Work.save(to_save)
+
+    @classmethod
+    def sync_timesheetline(cls, activities):
+        pool = Pool()
+        Work = pool.get('project.work')
+        TimesheetLine = pool.get('timesheet.line')
+        Warning = pool.get('res.user.warning')
+
+        to_save = []
+        for activity in activities:
+            if not isinstance(activity.resource, Work):
+                if activity.timesheet_line:
+                    key = 'no_resource_assigned_%d'  % activity.id
+                    if Warning.check(key):
+                        raise UserWarning(key, gettext(
+                            'project_activity.msg_no_resource',
+                            timesheet=activity.timesheet_line.rec_name))
+                    TimesheetLine.delete([activity.timesheet_line])
+                continue
+
+            if not activity.timesheet_line:
+                if not activity.duration:
+                    continue
+                if not activity.resource.timesheet_works:
+                    key = 'no_timesheet_work_%d' % activity.id
+                    if Warning.check(key):
+                        raise UserWarning(key, gettext(
+                            'project_activity.msg_no_timesheet_works'))
+                    continue
+
+                timesheet_line = TimesheetLine()
+                timesheet_line.activity = activity
+                timesheet_line.work = activity.resource.timesheet_works[0]
+            else:
+                timesheet_line = activity.timesheet_line
+                if not activity.duration and timesheet_line:
+                    key = 'no_duration_%d' % activity.id
+                    if Warning.check(key):
+                        raise UserWarning(key, gettext(
+                            'project_activity.msg_no_duration',
+                            activity=activity.rec_name,
+                            timesheet=timesheet_line.rec_name))
+                    TimesheetLine.delete([timesheet_line])
+                    continue
+
+            for attribute in ['company', 'employee', 'duration', 'date']:
+                value = getattr(activity, attribute)
+                if getattr(timesheet_line, attribute, None) != value:
+                    setattr(timesheet_line, attribute, value)
+
+            if timesheet_line.work != activity.resource.timesheet_works[0]:
+                timesheet_line.work = activity.resource.timesheet_works[0]
+
+            if (hasattr(timesheet_line, 'start')
+                    and (timesheet_line.start or timesheet_line.end)):
+                timesheet_line.start = None
+                timesheet_line.end = None
+
+            to_save.append(timesheet_line)
+
+        TimesheetLine.save(to_save)
+
+    @classmethod
+    def delete(cls, activities):
+        TimesheetLine = Pool().get('timesheet.line')
+        Warning = Pool().get('res.user.warning')
+
+        to_delete = [x.timesheet_line for x in activities if x.timesheet_line]
+        if to_delete:
+            key = Warning.format('delete_activity_and_line', to_delete)
+            if Warning.check(key):
+                activity = ', '.join([x.rec_name for x in activities[:5]])
+                raise UserWarning(key, gettext(
+                    'project_activity.msg_delete_act_and_tl',
+                    activity=activity))
+            TimesheetLine.delete(to_delete)
+        super().delete(activities)
+
+    @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls._buttons.update({
+                'create_resource': {
+                    'icon': 'tryton-ok',
+                    'invisible': ~Bool(Eval('party')) | Bool(Eval('resource'))
+                }
+                })
+
+    @classmethod
+    @ModelView.button_action('project_activity.act_create_resource_wizard')
+    def create_resource(cls, activities):
+        pass
+
+
+class CreateResource(Wizard):
+    'Create Resource'
+    __name__ = 'activity.create_resource'
+    start = StateView('activity.create_resource.start',
+        'project_activity.create_resource_start_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Next', 'open_task', 'tryton-next')
+            ])
+    open_task = StateAction('project.act_task_form')
+
+    def default_start(self, fields):
+        pool = Pool()
+        Work = pool.get('project.work')
+        projects = Work.search([
+            ('type', '=', 'project'),
+            ('party.id', '=', self.record.party.id),
+            ['OR',
+                [
+                    ('status.progress', '!=', '1'),
+                ], [
+                    ('status.progress', '=', None),
+                ],
+            ],
+            ])
+        default = {}
+        default['activity'] = self.record.id
+        default['party'] = self.record.party.id
+        default['project'] = projects[0].id if projects else None
+        return default
+
+    def get_task(self):
+        pool = Pool()
+        Work = pool.get('project.work')
+        task = Work()
+
+        activities = self.records
+        task.parent = self.start.project
+        task.on_change_parent()
+        task.name = self.record.subject
+        task.activities = activities
+        task.party = self.record.party
+        task.comment = self.record.description
+        return task
+
+    def do_open_task(self, action):
+        if not self.start.task:
+            task = self.get_task()
+            task.save()
+        else:
+            task = self.start.task
+            self.record.resource = task
+            self.record.save()
+
+        data = {'res_id': [task.id], 'views': action['views'].reverse()}
+        return action, data
+
+
+class CreateResourceStart(ModelView):
+    'Create Resource'
+    __name__ = 'activity.create_resource.start'
+    activity = fields.Many2One('activity.activity', "Activity", readonly=True)
+    party = fields.Many2One('party.party', "Party", readonly=True)
+    project = fields.Many2One('project.work', "Project",
+        domain=[
+            ('type', '=', 'project'),
+            ('party', '=', Eval('party', -1)),
+            ['OR',
+                [
+                    ('status.progress', '!=', '1'),
+                ], [
+                    ('status.progress', '=', None),
+                ],
+                ],
+                ], depends = ['party'])
+    task = fields.Many2One('project.work', "Task",
+        domain=[
+            ('type', '=', 'task'),
+            ('party', '=', Eval('party', -1)),
+            ['OR',
+                [
+                    ('status.progress', '!=', '1'),
+                ], [
+                    ('status.progress', '=', None),
+                ],
+                ],
+                ], depends = ['party'])
+    tasks = fields.One2Many('project.work', None, "Tasks", readonly=True)
+
+
+class WorkStatus(metaclass=PoolMeta):
+    'Work Status'
+    __name__ = 'project.work.status'
+
+    status_on_stakeholder_action = fields.Many2One('project.work.status',
+        'Stakeholder Action')
+
+    def check_status_for_stakeholder_action(self):
+        if self.status_on_stakeholder_action:
+            return self.status_on_stakeholder_action
+        return
+
+
+class ActivityType(metaclass=PoolMeta):
+    'Activity Type'
+    __name__ = "activity.type"
+
+    update_status_on_stakeholder_action = fields.Boolean(
+        "Update Status on StakeHolder Action")
+
+
+class ActivityTimeSheetSync(ModelSQL):
+    'Activity Timesheet Sync'
+    __name__ = 'activity.activity-timesheet.line'
+    activity = fields.Many2One('activity.activity', 'Activities', required=True,
+        ondelete='CASCADE')
+    timesheet_line = fields.Many2One('timesheet.line', 'Timesheet Lines',
+        required=True, ondelete='CASCADE')
+
+
+class TimesheetLine(metaclass=PoolMeta):
+    __name__ = 'timesheet.line'
+    activity = fields.One2One('activity.activity-timesheet.line',
+        'timesheet_line', 'activity', "Activity")
+
+    @classmethod
+    def write(cls, *args):
+        super().write(*args)
+        cls.sync_activity(list(chain(*args[::2])))
+
+    @classmethod
+    def create(cls, vlist):
+        res = super().create(vlist)
+        cls.sync_activity(res)
+        return res
+
+    @classmethod
+    def delete(cls, lines):
+        pool = Pool()
+        Activity = pool.get('activity.activity')
+
+        to_save = []
+        for line in lines:
+            if line.activity:
+                line.activity.duration = None
+                to_save.append(line.activity)
+
+        super().delete(lines)
+
+        Activity.save(to_save)
+
+    @classmethod
+    def sync_activity(cls, lines):
+        pool = Pool()
+        Activity = pool.get('activity.activity')
+        Warning = pool.get('res.user.warning')
+
+        to_save = []
+        for line in lines:
+            if not line.activity:
+                continue
+            for attribute in ['company', 'employee', 'duration', 'date']:
+                value = getattr(line, attribute)
+                if getattr(line.activity, attribute) != value:
+                    setattr(line.activity, attribute, value)
+
+            if line.work.origin != line.activity.resource:
+                key = 'changing_activity_%d'  % line.id
+                if Warning.check(key):
+                    raise UserWarning(key, gettext(
+                        'project_activity.msg_change_activity',
+                        activity=line.activity.rec_name,
+                        timesheet=line.rec_name))
+                line.activity.resource = line.work.origin
+
+            to_save.append(line.activity)
+        Activity.save(to_save)

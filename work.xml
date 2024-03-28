@@ -56,10 +56,40 @@ contains the full copyright notices and license terms. -->
             <field name="name">project_work_form</field>
         </record>
 
+        <record model="ir.ui.view" id="work_status_view_form">
+            <field name="model">project.work.status</field>
+            <field name="inherit" ref="project.work_status_view_form"/>
+            <field name="name">work_status_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="activity_type_view_form">
+            <field name="model">activity.type</field>
+            <field name="inherit" ref="activity.activity_type_form_view"/>
+            <field name="name">activity_type_form</field>
+        </record>
+
         <record model="ir.ui.view" id="activity_form_view">
             <field name="model">activity.activity</field>
             <field name="inherit" ref="activity.activity_activity_form_view"/>
             <field name="name">activity_form</field>
+        </record>
+
+        <!-- Create Resource Wizard-->
+        <record model="ir.ui.view" id="create_resource_start_view_form">
+            <field name="model">activity.create_resource.start</field>
+            <field name="type">form</field>
+            <field name="name">create_resource_start_form</field>
+        </record>
+
+        <record model="ir.model.button" id="create_resource_button">
+            <field name="name">create_resource</field>
+            <field name="string">Create Resource</field>
+            <field name="model" search="[('model', '=', 'activity.activity')]"/>
+        </record>
+
+        <record model="ir.action.wizard" id="act_create_resource_wizard">
+            <field name="name">Create Resource</field>
+            <field name="wiz_name">activity.create_resource</field>
         </record>
 
         <!-- Menus -->

@@ -14,4 +14,13 @@ def register():
         configuration.WorkConfiguration,
         configuration.ConfigurationEmployee,
         ir.Cron,
+        work.CreateResourceStart,
+        work.WorkStatus,
+        work.ActivityType,
+        work.ActivityTimeSheetSync,
+        work.TimesheetLine,
         module='project_activity', type_='model')
+
+    Pool.register(
+        work.CreateResource,
+        module='project_activity', type_='wizard')
