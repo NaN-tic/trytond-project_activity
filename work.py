@@ -21,12 +21,11 @@ from werkzeug.wrappers import Response
 from werkzeug.exceptions import abort
 from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
+from trytond.modules.widgets import tools
 from trytond.wizard import (
     Button, StateAction, StateView, Wizard)
 from trytond.modules.electronic_mail_activity.activity import SendActivityMailMixin
 from trytond.exceptions import UserWarning
-
-__all__ = ['ProjectReference', 'Activity', 'Project']
 
 EMAIL_PATTERN = r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+"
 
@@ -122,15 +121,14 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         res = []
         for activity in self.activities:
             description_text = activity.description or ''
-            previous = []
-            body_mail = []
-            for line in description_text.splitlines():
-                if line.startswith('>'):
-                    previous.append(line)
-                else:
-                    body_mail += previous
-                    previous = []
-                    body_mail.append(line)
+            if len(description_text) > 0:
+                for line in tools.js_to_text(description_text).split('\\n'):
+                    if line.startswith('>'):
+                        previous.append(line)
+                    else:
+                        body_mail += previous
+                        previous = []
+                        body_mail.append(line)
 
             attachments = Attachment.search([('resource.id', '=', activity.id,
                     'activity.activity')])
@@ -182,10 +180,6 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                     or ''),
                 'employee': (activity.employee and activity.employee.party.name
                     or ''),
-                'dots': dots,
-                'activity': activity.state,
-                'attachs_str': attachs_str,
-                'body_str': body_str,
                 })
             res.append(body)
         summary = '''<!DOCTYPE html>
