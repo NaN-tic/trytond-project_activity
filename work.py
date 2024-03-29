@@ -121,6 +121,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         res = []
         for activity in self.activities:
             description_text = activity.description or ''
+            previous = []
+            body_mail = []
             if len(description_text) > 0:
                 for line in tools.js_to_text(description_text).split('\\n'):
                     if line.startswith('>'):
@@ -180,6 +182,10 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                     or ''),
                 'employee': (activity.employee and activity.employee.party.name
                     or ''),
+                'dots': dots,
+                'activity': activity.state,
+                'attachs_str': attachs_str,
+                'body_str': body_str,
                 })
             res.append(body)
         summary = '''<!DOCTYPE html>
