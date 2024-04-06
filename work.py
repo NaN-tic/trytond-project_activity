@@ -392,7 +392,8 @@ class Activity(metaclass=PoolMeta):
                     key = 'no_timesheet_work_%d' % activity.id
                     if Warning.check(key):
                         raise UserWarning(key, gettext(
-                            'project_activity.msg_no_timesheet_works'))
+                            'project_activity.msg_no_timesheet_works',
+                            work=activity.resource.rec_name))
                     continue
 
                 timesheet_line = TimesheetLine()
