@@ -5,7 +5,6 @@ import html
 import humanize
 import re
 import mimetypes
-from datetime import time, datetime
 from itertools import chain
 try:
     from http import HTTPStatus
@@ -495,13 +494,15 @@ class CreateResource(Wizard):
         Work = pool.get('project.work')
         task = Work()
 
-        activities = self.records
         task.parent = self.start.project
         task.on_change_parent()
         task.name = self.record.subject
-        task.activities = activities
         task.party = self.record.party
         task.comment = self.record.description
+        # We do not fill 'activities' field here
+        # because it will cause a write() on activity.activity before
+        # timesheet.work is created by project.work and this would cause
+        # sync_timesheet_line() to be called before timesheet works are created
         return task
 
     def do_open_task(self, action):
@@ -510,9 +511,8 @@ class CreateResource(Wizard):
             task.save()
         else:
             task = self.start.task
-            self.record.resource = task
-            self.record.save()
-
+        self.record.resource = task
+        self.record.save()
         data = {'res_id': [task.id], 'views': action['views'].reverse()}
         return action, data
 
