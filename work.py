@@ -342,15 +342,17 @@ class Activity(metaclass=PoolMeta):
     def update_status_on_stakeholder_action(cls, activities):
         pool = Pool()
         Work = pool.get('project.work')
+        to_save = []
         for activity in activities:
             if activity.activity_type or activity.resource:
                 if (isinstance(activity.resource, Work)
-                    and activity.activity_type.update_status_on_stakeholder_action):
+                        and activity.activity_type.update_status_on_stakeholder_action):
                     work = activity.resource
-                    new_status = work.status.check_status_for_stakeholder_action()
+                    new_status = acctivity.resource.status.status_on_stakeholder_action
                     if new_status:
                         work.status = new_status
-                        work.save()
+                        to_save.append(work)
+        Work.save(to_save)
 
     @classmethod
     def sync_project_contacts(cls, activities):
@@ -555,11 +557,6 @@ class WorkStatus(metaclass=PoolMeta):
 
     status_on_stakeholder_action = fields.Many2One('project.work.status',
         'Stakeholder Action')
-
-    def check_status_for_stakeholder_action(self):
-        if self.status_on_stakeholder_action:
-            return self.status_on_stakeholder_action
-        return
 
 
 class ActivityType(metaclass=PoolMeta):
