@@ -348,7 +348,7 @@ class Activity(metaclass=PoolMeta):
                 if (isinstance(activity.resource, Work)
                         and activity.activity_type.update_status_on_stakeholder_action):
                     work = activity.resource
-                    new_status = acctivity.resource.status.status_on_stakeholder_action
+                    new_status = activity.resource.status.status_on_stakeholder_action
                     if new_status:
                         work.status = new_status
                         to_save.append(work)
