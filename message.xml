@@ -8,7 +8,7 @@ this repository contains the full copyright notices and license terms. -->
         </record>
 
         <record model="ir.message" id="msg_no_resource">
-            <field name="text">If you don't assign a resource to this activity, all work time registered on the timesheet line %(timesheet)s will be lost. Are you sure?</field>
+            <field name="text">If you don't assign a Task to this activity or the Task does not have a Time Sheet Work, all work time registered on the timesheet line %(timesheet)s will be lost. Are you sure?</field>
         </record>
 
         <record model="ir.message" id="msg_delete_act_and_tl">
