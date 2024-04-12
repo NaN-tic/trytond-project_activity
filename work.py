@@ -360,6 +360,9 @@ class Activity(metaclass=PoolMeta):
         Work = pool.get('project.work')
         to_save = []
         for activity in activities:
+            if not activity.resource:
+                continue
+
             if isinstance(activity.resource, Work):
                 for contact in activity.contacts:
                     if contact not in activity.resource.contacts:
@@ -376,6 +379,9 @@ class Activity(metaclass=PoolMeta):
 
         to_save = []
         for activity in activities:
+            if not activity.resource:
+                continue
+
             if not isinstance(activity.resource, Work):
                 if activity.timesheet_line:
                     key = 'no_resource_assigned_%d'  % activity.id
@@ -397,9 +403,10 @@ class Activity(metaclass=PoolMeta):
                             work=activity.resource.rec_name))
                     continue
 
-                timesheet_line = TimesheetLine()
-                timesheet_line.activity = activity
-                timesheet_line.work = activity.resource.timesheet_works[0]
+                if activity.resource.timesheet_works:
+                    timesheet_line = TimesheetLine()
+                    timesheet_line.activity = activity
+                    timesheet_line.work = activity.resource.timesheet_works[0]
             else:
                 timesheet_line = activity.timesheet_line
                 if not activity.duration and timesheet_line:
@@ -417,7 +424,8 @@ class Activity(metaclass=PoolMeta):
                 if getattr(timesheet_line, attribute, None) != value:
                     setattr(timesheet_line, attribute, value)
 
-            if timesheet_line.work != activity.resource.timesheet_works[0]:
+            if (timesheet_line.work and activity.resource.timesheet_works
+                    and (timesheet_line.work != activity.resource.timesheet_works[0])):
                 timesheet_line.work = activity.resource.timesheet_works[0]
 
             if (hasattr(timesheet_line, 'start')
