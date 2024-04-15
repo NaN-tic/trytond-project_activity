@@ -82,6 +82,16 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         'get_conversation_filename')
 
     @classmethod
+    def copy(cls, project_works, default=None):
+        if default is None:
+            default = {}
+        else:
+            default = default.copy()
+
+        with Transaction().set_context(skip_sync_timesheetline=True):
+            return super().copy(project_works, default=default)
+
+    @classmethod
     def get_activity_fields(cls, works, names):
         result = {}
         work_ids = [w.id for w in works]
@@ -374,6 +384,9 @@ class Activity(metaclass=PoolMeta):
         TimesheetLine = pool.get('timesheet.line')
         Warning = pool.get('res.user.warning')
 
+        if Transaction().context.get('skip_sync_timesheetline', False):
+            return
+
         to_save = []
         for activity in activities:
             if (not isinstance(activity.resource, Work)
@@ -385,7 +398,7 @@ class Activity(metaclass=PoolMeta):
                             'project_activity.msg_no_resource',
                             timesheet=activity.timesheet_line.rec_name))
                     TimesheetLine.delete([activity.timesheet_line])
-                elif (activity.duration
+                elif (activity.duration and activity.resource
                         and not activity.resource.timesheet_works):
                     key = 'no_timesheet_work_%d' % activity.id
                     if Warning.check(key):
