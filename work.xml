@@ -34,7 +34,7 @@ contains the full copyright notices and license terms. -->
         </record>
 
         <record model="ir.model.access" id="access_project_reference_default">
-            <field name="model" search="[('model', '=', 'project.reference')]"/>
+            <field name="model">project.reference</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -42,7 +42,7 @@ contains the full copyright notices and license terms. -->
         </record>
 
         <record model="ir.model.access" id="access_project_reference">
-            <field name="model" search="[('model', '=', 'project.reference')]"/>
+            <field name="model">project.reference</field>
             <field name="group" ref="project.group_project_admin"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
@@ -84,7 +84,7 @@ contains the full copyright notices and license terms. -->
         <record model="ir.model.button" id="create_resource_button">
             <field name="name">create_resource</field>
             <field name="string">Create Resource</field>
-            <field name="model" search="[('model', '=', 'activity.activity')]"/>
+            <field name="model">activity.activity</field>
         </record>
 
         <record model="ir.action.wizard" id="act_create_resource_wizard">
