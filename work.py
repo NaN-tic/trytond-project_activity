@@ -373,6 +373,11 @@ class Activity(metaclass=PoolMeta):
         Work = pool.get('project.work')
         TimesheetLine = pool.get('timesheet.line')
         Warning = pool.get('res.user.warning')
+        Configuration = pool.get('work.configuration')
+
+        config = Configuration(1)
+        if not config.synchronize_activity_time:
+            return
 
         to_save = []
         for activity in activities:

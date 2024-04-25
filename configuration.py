@@ -17,6 +17,7 @@ class WorkConfiguration(metaclass=PoolMeta):
             'e-mail does not correspond to any employee', required=True))
     email_activity_mailbox = fields.Many2One('electronic.mail.mailbox',
         'E-mail Activity Mailbox', required=True)
+    synchronize_activity_time = fields.Boolean('Synchronize Activity Time')
 
     @classmethod
     def multivalue_model(cls, field):
