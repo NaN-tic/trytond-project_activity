@@ -10,5 +10,7 @@
         <field name="email_activity_employee"/>
         <label name="email_activity_mailbox"/>
         <field name="email_activity_mailbox"/>
+        <label name="synchronize_activity_time"/>
+        <field name="synchronize_activity_time"/>
     </xpath>
 </data>
