@@ -82,6 +82,15 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         'get_conversation_filename')
 
     @classmethod
+    def copy(cls, project_works, default=None):
+        if default is None:
+            default = {}
+        else:
+            default = default.copy()
+        default.setdefault('activities', None)
+        return super().copy(project_works, default=default)
+
+    @classmethod
     def get_activity_fields(cls, works, names):
         result = {}
         work_ids = [w.id for w in works]
