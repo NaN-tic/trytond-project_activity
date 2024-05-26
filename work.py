@@ -83,11 +83,15 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
 
     @classmethod
     def copy(cls, project_works, default=None):
+        Configuration = pool.get('work.configuration')
+        config = Configuration(1)
+
         if default is None:
             default = {}
         else:
             default = default.copy()
-        default.setdefault('activities', None)
+        if config.synchronize_activity_time:
+            default.setdefault('activities', None)
         return super().copy(project_works, default=default)
 
     @classmethod
