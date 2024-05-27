@@ -83,7 +83,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
 
     @classmethod
     def copy(cls, project_works, default=None):
-        Configuration = pool.get('work.configuration')
+        Configuration = Pool.get('work.configuration')
         config = Configuration(1)
 
         if default is None:
