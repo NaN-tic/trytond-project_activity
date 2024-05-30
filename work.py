@@ -83,7 +83,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
 
     @classmethod
     def copy(cls, project_works, default=None):
-        Configuration = Pool.get('work.configuration')
+        pool = Pool()
+        Configuration = pool.get('work.configuration')
         config = Configuration(1)
 
         if default is None:
@@ -449,8 +450,9 @@ class Activity(metaclass=PoolMeta):
 
     @classmethod
     def delete(cls, activities):
-        TimesheetLine = Pool().get('timesheet.line')
-        Warning = Pool().get('res.user.warning')
+        pool = Pool()
+        TimesheetLine = pool.get('timesheet.line')
+        Warning = pool.get('res.user.warning')
 
         to_delete = [x.timesheet_line for x in activities if x.timesheet_line]
         if to_delete:
