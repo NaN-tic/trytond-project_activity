@@ -124,7 +124,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         ProjectReference = Pool().get('project.reference')
         res = [('', '')]
         for _type in ProjectReference.search([]):
-            res.append((_type.model.model, _type.model.name))
+            res.append((_type.model.name, _type.model.string))
         return res
 
     def get_conversation(self, name):
