@@ -137,7 +137,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             previous = []
             body_mail = []
             if len(description_text) > 0:
-                for line in tools.js_to_text(description_text).split('\\n'):
+                for line in description_text.replace('\\n', '\n').split('\n'):
                     if line.startswith('>'):
                         previous.append(line)
                     else:
