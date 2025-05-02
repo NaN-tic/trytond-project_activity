@@ -22,5 +22,31 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.message" id="msg_change_activity">
             <field name="text">Changing the work of the timesheet line %(timesheet)s will change the activity %(activity)s. Do you wish to proceed?</field>
         </record>
+
+        <record model="ir.message" id="msg_conversation">
+            <field name="text"><![CDATA[
+<span style="font-size:13px;">
+    <div style="font-family: Sans-serif;">
+        <h1>%(type)s, %(date_human)s</h1>
+        <table style="font-size:13px;">
+            <tr>
+                <td>Code: <span style="color:#778899;">%(code)s</span></td>
+                <td>Contact: <span style="color:#778899;">%(contact)s</span></td>
+            </tr>
+            <tr>
+                <td>Date: <span style="color:#778899;">%(date)s %(time)s</span></td>
+                <td>State: <span style="color:#778899;">%(activity)s</span></td>
+            </tr>
+            <tr>
+                <td colspan="0">Subject: <span style="color:#778899;">%(subject)s</span></td>
+            </tr>
+            <tr><td colspan="0">Employee: <span style="color:#778899;">%(employee)s</span></td></tr>
+        </table>
+    </div>
+    <div style="font-family: Sans-serif;">%(attachs_str)s</div>
+    <div style="font-family: Sans-serif;"><br/>%(body_str)s</div>
+    %(dots)s
+</span>]]></field>
+        </record>
     </data>
 </tryton>
