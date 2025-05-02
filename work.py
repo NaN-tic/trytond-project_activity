@@ -131,8 +131,17 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         pool = Pool()
         Attachment = pool.get('ir.attachment')
 
+        transaction = Transaction()
+        extranet = transaction.context.get('from_extranet') or False
+
+        if extranet and not (
+                self.galatea and self.status.galatea and self.tracker.galatea):
+            return ''
+
         res = []
         for activity in self.activities:
+            if extranet and activity.activity_type.id not in (1, 2, 3, 4, 5):
+                continue
             description_text = activity.description or ''
             previous = []
             body_mail = []
@@ -150,8 +159,12 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' %
                 (URLAccessor.http_host(), Transaction().database.name, x.id,
                      x.name) for x in attachments]
-            attachs_str = ("<div style='line-height: 2'>"
-                    + " ".join(attachment_names) + "</div>")
+            if extranet:
+                attachs_str = ''
+            else:
+                attachs_str = ("<div style='line-height: 2'>"
+                        + " ".join(attachment_names) + "</div>")
+
             body_str = "\n".join(body_mail)
             body_str = html.escape(body_str)
             body_str = create_anchors(body_str)
@@ -168,28 +181,12 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             else:
                 dots = ''
 
-            body = "\n"
-            body += '<span style="font-size:13px;">'
-            body += '<div style="font-family: Sans-serif;">'
-            body += '<h1>%(type)s, %(date_human)s</h1>'
-            body += '<table style="font-size:13px;"><tr>'
-            body += '<td>Code: <span style="color:#778899;">%(code)s</span></td>'
-            body += '<td>Contact: <span style="color:#778899;">%(contact)s</span></td></tr>'
-            body += '<tr><td>Date: <span style="color:#778899;">%(date)s %(time)s</span></td>'
-            body += '<td>State: <span style="color:#778899;">%(activity)s</span></td></tr>'
-            body += '<tr><td colspan="0">Subject: <span style="color:#778899;">%(subject)s</span></td></tr>'
-            body += '<tr><td colspan="0">Employee: <span style="color:#778899;">%(employee)s</span></td></tr>'
-            body += '</table></div>'
-            body += '<div style="font-family: Sans-serif;">%(attachs_str)s</div>'
-            body += '<div style="font-family: Sans-serif;"><br/>%(body_str)s</div>'
-            body += '%(dots)s'
-            body += '</span>'
-            body = body % ({
+            body = gettext('project_activity.msg_conversation') % ({
                 'type': activity.activity_type.name,
                 'code': activity.code,
-                'subject': activity.subject or "",
+                'subject': activity.subject or '',
                 'date': activity.date,
-                'time': activity.time or "",
+                'time': activity.time or '',
                 'date_human': humanize.naturaltime(activity.dtstart),
                 'contact': (activity.contacts and activity.contacts[0].name
                     or ''),
@@ -199,7 +196,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 'activity': activity.state,
                 'attachs_str': attachs_str,
                 'body_str': body_str,
-                })
+            })
+            body = body.replace('\n', '<br/>')
             res.append(body)
         summary = '''<!DOCTYPE html>
             <html>
