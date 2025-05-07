@@ -128,24 +128,28 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         return res
 
     def get_conversation(self, name):
+        summary = self.get_conversation_activities(self.activities)
+        # TODO supports str as value of Binary field so sao should also
+        # https://bugs.tryton.org/issue11534
+        return summary.encode()
+
+    def get_conversation_filename(self, name):
+        return 'conversation.html'
+
+    @classmethod
+    def get_conversation_activities(cls, activities, include_attachments=True):
         pool = Pool()
         Attachment = pool.get('ir.attachment')
 
         transaction = Transaction()
-        extranet = transaction.context.get('from_extranet') or False
+        database = transaction.database.name
 
-        if extranet and not (
-                self.galatea and self.status.galatea and self.tracker.galatea):
-            return ''
-
-        res = []
-        for activity in self.activities:
-            if extranet and activity.activity_type.id not in (1, 2, 3, 4, 5):
-                continue
-            description_text = activity.description or ''
+        result = []
+        for activity in activities:
+            description_text = (activity.description or '').strip()
             previous = []
             body_mail = []
-            if len(description_text) > 0:
+            if description_text:
                 for line in tools.js_to_text(description_text).split('\\n'):
                     if line.startswith('>'):
                         previous.append(line)
@@ -154,23 +158,24 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                         previous = []
                         body_mail.append(line)
 
-            attachments = Attachment.search([('resource.id', '=', activity.id,
-                    'activity.activity')])
-            attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' %
-                (URLAccessor.http_host(), Transaction().database.name, x.id,
-                     x.name) for x in attachments]
-            if extranet:
-                attachs_str = ''
-            else:
-                attachs_str = ("<div style='line-height: 2'>"
-                        + " ".join(attachment_names) + "</div>")
+            attachments = Attachment.search([
+                ('resource.id', '=', activity.id, 'activity.activity') ])
+            attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' % (
+                URLAccessor.http_host(), database, x.id, x.name)
+                for x in attachments]
 
-            body_str = "\n".join(body_mail)
+            if include_attachments:
+                attachs_str = ('<div style="line-height: 2">' +
+                    ' '.join(attachment_names) + '</div>')
+            else:
+                attachs_str = ''
+
+            body_str = '\n'.join(body_mail)
             body_str = html.escape(body_str)
             body_str = create_anchors(body_str)
             body_str = '<br/>'.join(body_str.splitlines())
 
-            previous_str = "\n".join(previous)
+            previous_str = '\n'.join(previous)
             if previous_str.strip():
                 previous_str = html.escape(previous_str)
                 previous_str = create_anchors(previous_str)
@@ -198,8 +203,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 'body_str': body_str,
             })
             body = body.replace('\n', '<br/>')
-            res.append(body)
-        summary = '''<!DOCTYPE html>
+            result.append(body)
+        return '''<!DOCTYPE html>
             <html>
             <head>
             <style>
@@ -223,13 +228,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             </script>
             </head>
             <body>%s</body></html>
-            ''' % ''.join(res)
-        # TODO supports str as value of Binary field so sao should also
-        # https://bugs.tryton.org/issue11534
-        return summary.encode()
-
-    def get_conversation_filename(self, name):
-        return 'conversation.html'
+            ''' % ''.join(result)
 
 
 class Activity(metaclass=PoolMeta):
