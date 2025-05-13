@@ -20,7 +20,6 @@ from werkzeug.wrappers import Response
 from werkzeug.exceptions import abort
 from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
-from trytond.modules.widgets import tools
 from trytond.wizard import (
     Button, StateAction, StateView, Wizard)
 from trytond.modules.electronic_mail_activity.activity import SendActivityMailMixin
@@ -128,12 +127,25 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         return res
 
     def get_conversation(self, name):
+        summary = self.get_conversation_activities(self.activities)
+        # TODO supports str as value of Binary field so sao should also
+        # https://bugs.tryton.org/issue11534
+        return summary.encode()
+
+    def get_conversation_filename(self, name):
+        return 'conversation.html'
+
+    @classmethod
+    def get_conversation_activities(cls, activities, include_attachments=True):
         pool = Pool()
         Attachment = pool.get('ir.attachment')
 
-        res = []
-        for activity in self.activities:
-            description_text = activity.description or ''
+        transaction = Transaction()
+        database = transaction.database.name
+
+        result = []
+        for activity in activities:
+            description_text = (activity.description or '').strip()
             previous = []
             body_mail = []
             if len(description_text) > 0:
@@ -145,19 +157,24 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                         previous = []
                         body_mail.append(line)
 
-            attachments = Attachment.search([('resource.id', '=', activity.id,
-                    'activity.activity')])
-            attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' %
-                (URLAccessor.http_host(), Transaction().database.name, x.id,
-                     x.name) for x in attachments]
-            attachs_str = ("<div style='line-height: 2'>"
-                    + " ".join(attachment_names) + "</div>")
-            body_str = "\n".join(body_mail)
+            attachments = Attachment.search([
+                ('resource.id', '=', activity.id, 'activity.activity') ])
+            attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' % (
+                URLAccessor.http_host(), database, x.id, x.name)
+                for x in attachments]
+
+            if include_attachments:
+                attachs_str = ('<div style="line-height: 2">' +
+                    ' '.join(attachment_names) + '</div>')
+            else:
+                attachs_str = ''
+
+            body_str = '\n'.join(body_mail)
             body_str = html.escape(body_str)
             body_str = create_anchors(body_str)
             body_str = '<br/>'.join(body_str.splitlines())
 
-            previous_str = "\n".join(previous)
+            previous_str = '\n'.join(previous)
             if previous_str.strip():
                 previous_str = html.escape(previous_str)
                 previous_str = create_anchors(previous_str)
@@ -168,40 +185,23 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             else:
                 dots = ''
 
-            body = "\n"
-            body += '<span style="font-size:13px;">'
-            body += '<div style="font-family: Sans-serif;">'
-            body += '<h1>%(type)s, %(date_human)s</h1>'
-            body += '<table style="font-size:13px;"><tr>'
-            body += '<td>Code: <span style="color:#778899;">%(code)s</span></td>'
-            body += '<td>Contact: <span style="color:#778899;">%(contact)s</span></td></tr>'
-            body += '<tr><td>Date: <span style="color:#778899;">%(date)s %(time)s</span></td>'
-            body += '<td>State: <span style="color:#778899;">%(activity)s</span></td></tr>'
-            body += '<tr><td colspan="0">Subject: <span style="color:#778899;">%(subject)s</span></td></tr>'
-            body += '<tr><td colspan="0">Employee: <span style="color:#778899;">%(employee)s</span></td></tr>'
-            body += '</table></div>'
-            body += '<div style="font-family: Sans-serif;">%(attachs_str)s</div>'
-            body += '<div style="font-family: Sans-serif;"><br/>%(body_str)s</div>'
-            body += '%(dots)s'
-            body += '</span>'
-            body = body % ({
-                'type': activity.activity_type.name,
-                'code': activity.code,
-                'subject': activity.subject or "",
-                'date': activity.date,
-                'time': activity.time or "",
-                'date_human': humanize.naturaltime(activity.dtstart),
-                'contact': (activity.contacts and activity.contacts[0].name
+            body = gettext('project_activity.msg_conversation',
+                type=activity.activity_type.name,
+                code=activity.code,
+                subject=activity.subject or '',
+                date=activity.date,
+                time=activity.time or '',
+                date_human=humanize.naturaltime(activity.dtstart),
+                contact=(activity.contacts and activity.contacts[0].name or ''),
+                employee=(activity.employee and activity.employee.party.name
                     or ''),
-                'employee': (activity.employee and activity.employee.party.name
-                    or ''),
-                'dots': dots,
-                'activity': activity.state,
-                'attachs_str': attachs_str,
-                'body_str': body_str,
-                })
-            res.append(body)
-        summary = '''<!DOCTYPE html>
+                dots=dots,
+                activity=activity.state,
+                attachs_str=attachs_str,
+                body_str=body_str,
+            )
+            result.append(body)
+        return '''<!DOCTYPE html>
             <html>
             <head>
             <style>
@@ -225,13 +225,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             </script>
             </head>
             <body>%s</body></html>
-            ''' % ''.join(res)
-        # TODO supports str as value of Binary field so sao should also
-        # https://bugs.tryton.org/issue11534
-        return summary.encode()
-
-    def get_conversation_filename(self, name):
-        return 'conversation.html'
+            ''' % '<br/>'.join(result)
 
 
 class Activity(metaclass=PoolMeta):
