@@ -200,7 +200,6 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 attachs_str=attachs_str,
                 body_str=body_str,
             )
-            body = body.replace('\n', '<br/>')
             result.append(body)
         return '''<!DOCTYPE html>
             <html>
@@ -226,7 +225,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             </script>
             </head>
             <body>%s</body></html>
-            ''' % ''.join(result)
+            ''' % '<br/>'.join(result)
 
 
 class Activity(metaclass=PoolMeta):
