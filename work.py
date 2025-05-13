@@ -186,22 +186,21 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             else:
                 dots = ''
 
-            body = gettext('project_activity.msg_conversation') % ({
-                'type': activity.activity_type.name,
-                'code': activity.code,
-                'subject': activity.subject or '',
-                'date': activity.date,
-                'time': activity.time or '',
-                'date_human': humanize.naturaltime(activity.dtstart),
-                'contact': (activity.contacts and activity.contacts[0].name
+            body = gettext('project_activity.msg_conversation',
+                type=activity.activity_type.name,
+                code=activity.code,
+                subject=activity.subject or '',
+                date=activity.date,
+                time=activity.time or '',
+                date_human=humanize.naturaltime(activity.dtstart),
+                contact=(activity.contacts and activity.contacts[0].name or ''),
+                employee=(activity.employee and activity.employee.party.name
                     or ''),
-                'employee': (activity.employee and activity.employee.party.name
-                    or ''),
-                'dots': dots,
-                'activity': activity.state,
-                'attachs_str': attachs_str,
-                'body_str': body_str,
-            })
+                dots=dots,
+                activity=activity.state,
+                attachs_str=attachs_str,
+                body_str=body_str,
+            )
             body = body.replace('\n', '<br/>')
             result.append(body)
         return '''<!DOCTYPE html>
