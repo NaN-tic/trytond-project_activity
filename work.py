@@ -20,7 +20,6 @@ from werkzeug.wrappers import Response
 from werkzeug.exceptions import abort
 from trytond.protocols.wrappers import with_pool, with_transaction
 from trytond.url import URLAccessor
-from trytond.modules.widgets import tools
 from trytond.wizard import (
     Button, StateAction, StateView, Wizard)
 from trytond.modules.electronic_mail_activity.activity import SendActivityMailMixin
@@ -149,8 +148,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             description_text = (activity.description or '').strip()
             previous = []
             body_mail = []
-            if description_text:
-                for line in tools.js_to_text(description_text).split('\\n'):
+            if len(description_text) > 0:
+                for line in description_text.replace('\\n', '\n').split('\n'):
                     if line.startswith('>'):
                         previous.append(line)
                     else:
