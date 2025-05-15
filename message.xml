@@ -27,7 +27,7 @@ this repository contains the full copyright notices and license terms. -->
             <field name="text"><![CDATA[
 <span style="font-size:13px;">
     <div style="font-family: Sans-serif;">
-        <h1>%(type)s, %(date_human)s</h1>
+        <h1>%(type)s%(date_human)s</h1>
         <table style="font-size:13px;">
             <tr>
                 <td>Code: <span style="color:#778899;">%(code)s</span></td>

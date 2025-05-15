@@ -136,7 +136,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         return 'conversation.html'
 
     @classmethod
-    def get_conversation_activities(cls, activities, include_attachments=True):
+    def get_conversation_activities(cls, activities, extranet=False):
         pool = Pool()
         Attachment = pool.get('ir.attachment')
 
@@ -157,17 +157,16 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                         previous = []
                         body_mail.append(line)
 
-            attachments = Attachment.search([
-                ('resource.id', '=', activity.id, 'activity.activity') ])
-            attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' % (
-                URLAccessor.http_host(), database, x.id, x.name)
-                for x in attachments]
-
-            if include_attachments:
+            if extranet:
+                attachs_str = ''
+            else:
+                attachments = Attachment.search([
+                    ('resource.id', '=', activity.id, 'activity.activity') ])
+                attachment_names = ['<a href="%s/%s/ir/attachment/%s">%s</a>' % (
+                    URLAccessor.http_host(), database, x.id, x.name)
+                    for x in attachments]
                 attachs_str = ('<div style="line-height: 2">' +
                     ' '.join(attachment_names) + '</div>')
-            else:
-                attachs_str = ''
 
             body_str = '\n'.join(body_mail)
             body_str = html.escape(body_str)
@@ -185,13 +184,18 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
             else:
                 dots = ''
 
+            if extranet:
+                date_human = ''
+            else:
+                date_human = ', ' + humanize.naturaltime(activity.dtstart)
+
             body = gettext('project_activity.msg_conversation',
                 type=activity.activity_type.name,
                 code=activity.code,
                 subject=activity.subject or '',
                 date=activity.date,
                 time=activity.time or '',
-                date_human=humanize.naturaltime(activity.dtstart),
+                date_human=date_human,
                 contact=(activity.contacts and activity.contacts[0].name or ''),
                 employee=(activity.employee and activity.employee.party.name
                     or ''),
