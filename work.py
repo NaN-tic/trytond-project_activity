@@ -127,7 +127,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         return res
 
     def get_conversation(self, name):
-        summary = self.get_conversation_activities(self.activities)
+        summary = self.get_conversation_activities(self.activities) or ''
         # TODO supports str as value of Binary field so sao should also
         # https://bugs.tryton.org/issue11534
         return summary.encode()
@@ -201,6 +201,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 body_str=body_str,
             )
             result.append(body)
+        if not result:
+            return None
         return '''<!DOCTYPE html>
             <html>
             <head>
