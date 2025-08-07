@@ -122,7 +122,7 @@ msgstr "Activitat"
 
 msgctxt "field:work.configuration,email_activity_employee:"
 msgid "E-mail Activity Employee"
-msgstr "Activitat del correu electrònic de l'empleat"
+msgstr "Empleat de l'Activitat de correu electrònic"
 
 msgctxt "field:work.configuration,email_activity_mailbox:"
 msgid "E-mail Activity Mailbox"
