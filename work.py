@@ -210,6 +210,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         return '''<!DOCTYPE html>
             <html>
             <head>
+            <meta charset="utf-8">
             <style>
             .dots {
               background-color: lightgray;
