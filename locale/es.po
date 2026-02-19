@@ -234,7 +234,7 @@ msgstr "Al eliminar la(s) actividad(es) %(activity)s, se cancelará el registro 
 
 msgctxt "model:ir.message,text:msg_no_duration"
 msgid "Setting the activity %(activity)s with no duration will result in losing these timesheet lines: %(timesheet)s. Do you wish to proceed?"
-msgstr "Si se configura la actividad %(activity)s sin duración, se perderán las siguientes líneas de la hoja de horas: %(timesheet)s. ¿Desea continuar?"
+msgstr "Si se configura la actividad %(activity)s sin duración, se perderán las siguientes líneas de la hoja de horas: %(timesheet). ¿Desea continuar?"
 
 msgctxt "model:ir.message,text:msg_no_resource"
 msgid "If you don't assign a resource to this activity, all work time registered on the timesheet line %(timesheet)s will be lost. Are you sure?"
