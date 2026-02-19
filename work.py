@@ -108,7 +108,7 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                     result['channel'][w.id] = (activity.activity_type.id
                         if activity.activity_type else None)
                     result['contact_name'][w.id] = (
-                        activity.contacts[0].rec_name if activity.contacts
+                        activity.contacts[0].party.rec_name if activity.contacts
                         else None)
                 if not max_date or activity.dtstart >= max_date:
                     max_date = activity.dtstart
@@ -196,7 +196,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 date=activity.date,
                 time=activity.time or '',
                 date_human=date_human,
-                contact=(activity.contacts and activity.contacts[0].name or ''),
+                contact=(activity.contacts and
+                         activity.contacts[0].party.name or ''),
                 employee=(activity.employee and activity.employee.party.name
                     or ''),
                 dots=dots,
@@ -373,13 +374,25 @@ class Activity(metaclass=PoolMeta):
     def sync_project_contacts(cls, activities):
         pool = Pool()
         Work = pool.get('project.work')
+        WorkParty = pool.get('project.work-party.party')
         to_save = []
         for activity in activities:
             if isinstance(activity.resource, Work):
+                resource = activity.resource
                 for contact in activity.contacts:
-                    if contact not in activity.resource.contacts:
-                        activity.resource.contacts += (contact,)
-                to_save.append(activity.resource)
+                    if contact.party not in [c.party for c in resource.contacts]:
+                        work_contact = WorkParty.search([
+                            ('work', '=', resource.id),
+                            ('party', '=', contact.party.id),
+                            ], limit=1)
+                        if not work_contact:
+                            work_contact = WorkParty()
+                            work_contact.work = resource
+                            work_contact.party = contact.party
+                        else:
+                            work_contact = work_contact[0]
+                        activity.resource.contacts += (work_contact,)
+                to_save.append(resource)
         Work.save(to_save)
 
     @classmethod
