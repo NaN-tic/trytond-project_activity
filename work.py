@@ -6,6 +6,7 @@ import humanize
 import re
 import mimetypes
 from itertools import chain
+from html2text import html2text
 try:
     from http import HTTPStatus
 except ImportError:
@@ -318,7 +319,7 @@ class Activity(metaclass=PoolMeta):
                     activities = {
                         'activities': [
                             ('create', [{
-                                    'description': mail.body_plain,
+                                    'description': html2text(str(mail.body)),
                                     'subject': mail.subject,
                                     'resource': 'project.work,%s' % works[0].id,
                                     # Mandatory fields:
