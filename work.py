@@ -288,9 +288,9 @@ class Activity(metaclass=PoolMeta):
                 if work_id:
                     work_ids.append(work_id)
 
-            if mail.reference != None:
+            if mail.references != None:
                 # Delete string literal (\r, \n, \t)
-                reference = mail.reference
+                reference = mail.references
                 for char in ('\r', '\n', '\t'):
                     reference = reference.replace(char, ' ')
                 for reference in reference.split():
