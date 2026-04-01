@@ -84,13 +84,15 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
     def copy(cls, project_works, default=None):
         pool = Pool()
         Configuration = pool.get('work.configuration')
-        config = Configuration(1)
+        config_data = Configuration.read([1], ['synchronize_activity_time'])
+        synchronize_activity_time = bool(
+            config_data and config_data[0].get('synchronize_activity_time'))
 
         if default is None:
             default = {}
         else:
             default = default.copy()
-        if config.synchronize_activity_time:
+        if synchronize_activity_time:
             default.setdefault('activities', None)
         return super().copy(project_works, default=default)
 
@@ -402,9 +404,10 @@ class Activity(metaclass=PoolMeta):
         TimesheetLine = pool.get('timesheet.line')
         Warning = pool.get('res.user.warning')
         Configuration = pool.get('work.configuration')
-
-        config = Configuration(1)
-        if not config.synchronize_activity_time:
+        config_data = Configuration.read([1], ['synchronize_activity_time'])
+        synchronize_activity_time = bool(
+            config_data and config_data[0].get('synchronize_activity_time'))
+        if not synchronize_activity_time:
             return
 
         to_save = []
