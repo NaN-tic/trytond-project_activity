@@ -96,6 +96,10 @@ msgctxt "field:project.work,contact_name:"
 msgid "Contact Name"
 msgstr "Nombre contacto"
 
+msgctxt "field:project.work,in_reply_to:"
+msgid "In-Reply-To"
+msgstr "In-Reply-To"
+
 msgctxt "field:project.work,conversation:"
 msgid "Conversation"
 msgstr "Conversación"
@@ -107,6 +111,14 @@ msgstr "Nombre del archivo"
 msgctxt "field:project.work,last_action_date:"
 msgid "Last Action"
 msgstr "Última acción"
+
+msgctxt "field:project.work,original_mail_message_id:"
+msgid "Original Mail Message-ID"
+msgstr "Message-ID original del correo"
+
+msgctxt "field:project.work,references:"
+msgid "References"
+msgstr "Referencias"
 
 msgctxt "field:project.work,resource:"
 msgid "Resource"

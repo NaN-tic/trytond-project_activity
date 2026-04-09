@@ -68,6 +68,13 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
         'Activities', context={
             'project_party': Eval('party'),
             }, depends=['party'])
+    in_reply_to = fields.Function(fields.Char('In-Reply-To'),
+        'get_in_reply_to')
+    references = fields.Function(fields.Char('References'),
+        'get_references')
+    original_mail_message_id = fields.Function(
+        fields.Char('Original Mail Message-ID'),
+        'get_original_mail_message_id')
     last_action_date = fields.Function(fields.DateTime('Last Action'),
         'get_activity_fields')
     channel = fields.Function(fields.Many2One('activity.type', 'Channel'),
@@ -134,6 +141,45 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
 
     def get_conversation_filename(self, name):
         return 'conversation.html'
+
+    def get_in_reply_to(self, name):
+        Activity = Pool().get('activity.activity')
+        activities = Activity.search([
+                ('resource', '=', str(self)),
+                ('mail', '!=', None),
+                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
+        if activities and activities[0].mail:
+            return activities[0].mail.message_id or ""
+        return ""
+
+    def get_references(self, name):
+        Activity = Pool().get('activity.activity')
+        activities = Activity.search([
+                ('resource', '=', str(self)),
+                ('mail', '!=', None),
+                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
+        if not activities or not activities[0].mail:
+            return ""
+
+        thread_mail = activities[0].mail
+        references = []
+        if thread_mail.references:
+            references = thread_mail.references.split()
+        elif thread_mail.in_reply_to:
+            references = [thread_mail.in_reply_to]
+        if thread_mail.message_id and thread_mail.message_id not in references:
+            references.append(thread_mail.message_id)
+        return " ".join(references)
+
+    def get_original_mail_message_id(self, name):
+        Activity = Pool().get('activity.activity')
+        activities = Activity.search([
+                ('resource', '=', str(self)),
+                ('mail', '!=', None),
+                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
+        if activities and activities[0].mail:
+            return activities[0].mail.message_id or ""
+        return ""
 
     @classmethod
     def get_conversation_activities(cls, activities, extranet=False):
