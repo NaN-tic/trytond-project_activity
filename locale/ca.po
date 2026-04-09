@@ -96,6 +96,10 @@ msgctxt "field:project.work,contact_name:"
 msgid "Contact Name"
 msgstr "Nom del contacte"
 
+msgctxt "field:project.work,in_reply_to:"
+msgid "In-Reply-To"
+msgstr "In-Reply-To"
+
 msgctxt "field:project.work,conversation:"
 msgid "Conversation"
 msgstr "Conversa"
@@ -107,6 +111,14 @@ msgstr "Nom del fitxer"
 msgctxt "field:project.work,last_action_date:"
 msgid "Last Action"
 msgstr "Última acció"
+
+msgctxt "field:project.work,original_mail_message_id:"
+msgid "Original Mail Message-ID"
+msgstr "Message-ID original del correu"
+
+msgctxt "field:project.work,references:"
+msgid "References"
+msgstr "Referències"
 
 msgctxt "field:project.work,resource:"
 msgid "Resource"
