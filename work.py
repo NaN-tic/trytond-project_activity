@@ -148,8 +148,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 ('resource', '=', str(self)),
                 ('mail', '!=', None),
                 ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
-        if activities and activities[0].mail:
-            return activities[0].mail.message_id or ""
+        if activities:
+            return activities[0].in_reply_to or ""
         return ""
 
     def get_references(self, name):
@@ -158,18 +158,9 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 ('resource', '=', str(self)),
                 ('mail', '!=', None),
                 ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
-        if not activities or not activities[0].mail:
-            return ""
-
-        thread_mail = activities[0].mail
-        references = []
-        if thread_mail.references:
-            references = thread_mail.references.split()
-        elif thread_mail.in_reply_to:
-            references = [thread_mail.in_reply_to]
-        if thread_mail.message_id and thread_mail.message_id not in references:
-            references.append(thread_mail.message_id)
-        return " ".join(references)
+        if activities:
+            return activities[0].references or ""
+        return ""
 
     def get_original_mail_message_id(self, name):
         Activity = Pool().get('activity.activity')
@@ -177,8 +168,8 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
                 ('resource', '=', str(self)),
                 ('mail', '!=', None),
                 ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
-        if activities and activities[0].mail:
-            return activities[0].mail.message_id or ""
+        if activities:
+            return activities[0].original_mail_message_id or ""
         return ""
 
     @classmethod
