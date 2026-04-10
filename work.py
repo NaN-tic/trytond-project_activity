@@ -144,32 +144,39 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
 
     def get_in_reply_to(self, name):
         Activity = Pool().get('activity.activity')
+        if 'mail' not in Activity._fields:
+            return ""
         activities = Activity.search([
                 ('resource', '=', str(self)),
                 ('mail', '!=', None),
                 ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
         if activities:
-            return activities[0].in_reply_to or ""
+            return getattr(activities[0], 'in_reply_to', '') or ""
         return ""
 
     def get_references(self, name):
         Activity = Pool().get('activity.activity')
+        if 'mail' not in Activity._fields:
+            return ""
         activities = Activity.search([
                 ('resource', '=', str(self)),
                 ('mail', '!=', None),
                 ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
         if activities:
-            return activities[0].references or ""
+            return getattr(activities[0], 'references', '') or ""
         return ""
 
     def get_original_mail_message_id(self, name):
         Activity = Pool().get('activity.activity')
+        if 'mail' not in Activity._fields:
+            return ""
         activities = Activity.search([
                 ('resource', '=', str(self)),
                 ('mail', '!=', None),
                 ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
         if activities:
-            return activities[0].original_mail_message_id or ""
+            return getattr(
+                activities[0], 'original_mail_message_id', '') or ""
         return ""
 
     @classmethod
