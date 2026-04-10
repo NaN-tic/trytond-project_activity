@@ -61,20 +61,13 @@ class ProjectReference(ModelSQL, ModelView):
     model = fields.Many2One('ir.model', 'Model', required=True)
 
 
-class Project(SendActivityMailMixin, metaclass=PoolMeta):
+class Project(metaclass=PoolMeta):
     __name__ = 'project.work'
 
     activities = fields.One2Many('activity.activity', 'resource',
         'Activities', context={
             'project_party': Eval('party'),
             }, depends=['party'])
-    in_reply_to = fields.Function(fields.Char('In-Reply-To'),
-        'get_in_reply_to')
-    references = fields.Function(fields.Char('References'),
-        'get_references')
-    original_mail_message_id = fields.Function(
-        fields.Char('Original Mail Message-ID'),
-        'get_original_mail_message_id')
     last_action_date = fields.Function(fields.DateTime('Last Action'),
         'get_activity_fields')
     channel = fields.Function(fields.Many2One('activity.type', 'Channel'),
@@ -141,36 +134,6 @@ class Project(SendActivityMailMixin, metaclass=PoolMeta):
 
     def get_conversation_filename(self, name):
         return 'conversation.html'
-
-    def get_in_reply_to(self, name):
-        Activity = Pool().get('activity.activity')
-        activities = Activity.search([
-                ('resource', '=', str(self)),
-                ('mail', '!=', None),
-                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
-        if activities:
-            return activities[0].in_reply_to or ""
-        return ""
-
-    def get_references(self, name):
-        Activity = Pool().get('activity.activity')
-        activities = Activity.search([
-                ('resource', '=', str(self)),
-                ('mail', '!=', None),
-                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
-        if activities:
-            return activities[0].references or ""
-        return ""
-
-    def get_original_mail_message_id(self, name):
-        Activity = Pool().get('activity.activity')
-        activities = Activity.search([
-                ('resource', '=', str(self)),
-                ('mail', '!=', None),
-                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
-        if activities:
-            return activities[0].original_mail_message_id or ""
-        return ""
 
     @classmethod
     def get_conversation_activities(cls, activities, extranet=False):
@@ -636,6 +599,48 @@ class ActivityType(metaclass=PoolMeta):
 
     update_status_on_stakeholder_action = fields.Boolean(
         "Update Status on StakeHolder Action")
+
+
+class ProjectActivityEmail(SendActivityMailMixin, metaclass=PoolMeta):
+    __name__ = 'project.work'
+
+    in_reply_to = fields.Function(fields.Char('In-Reply-To'),
+        'get_in_reply_to')
+    references = fields.Function(fields.Char('References'),
+        'get_references')
+    original_mail_message_id = fields.Function(
+        fields.Char('Original Mail Message-ID'),
+        'get_original_mail_message_id')
+
+    def get_in_reply_to(self, name):
+        Activity = Pool().get('activity.activity')
+        activities = Activity.search([
+                ('resource', '=', str(self)),
+                ('mail', '!=', None),
+                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
+        if activities:
+            return activities[0].in_reply_to or ""
+        return ""
+
+    def get_references(self, name):
+        Activity = Pool().get('activity.activity')
+        activities = Activity.search([
+                ('resource', '=', str(self)),
+                ('mail', '!=', None),
+                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
+        if activities:
+            return activities[0].references or ""
+        return ""
+
+    def get_original_mail_message_id(self, name):
+        Activity = Pool().get('activity.activity')
+        activities = Activity.search([
+                ('resource', '=', str(self)),
+                ('mail', '!=', None),
+                ], order=[('dtstart', 'DESC'), ('id', 'DESC')], limit=1)
+        if activities:
+            return activities[0].original_mail_message_id or ""
+        return ""
 
 
 class ActivityTimeSheetSync(ModelSQL):
