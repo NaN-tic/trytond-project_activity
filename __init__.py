@@ -22,5 +22,10 @@ def register():
         module='project_activity', type_='model')
 
     Pool.register(
+        work.ProjectActivityEmail,
+        module='project_activity', type_='model',
+        depends=['electronic_mail_activity'])
+
+    Pool.register(
         work.CreateResource,
         module='project_activity', type_='wizard')
