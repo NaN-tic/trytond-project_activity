@@ -403,64 +403,65 @@ class Activity(metaclass=PoolMeta):
         Warning = pool.get('res.user.warning')
         Configuration = pool.get('work.configuration')
 
-        config = Configuration(1)
-        if not config.synchronize_activity_time:
-            return
+        with Transaction().set_context(_check_access=False):
+            config = Configuration(1)
+            if not config.synchronize_activity_time:
+                return
 
-        to_save = []
-        for activity in activities:
-            if not isinstance(activity.resource, Work):
-                if activity.timesheet_line:
-                    key = 'no_resource_assigned_%d'  % activity.id
-                    if Warning.check(key):
-                        raise UserWarning(key, gettext(
-                            'project_activity.msg_no_resource',
-                            timesheet=activity.timesheet_line.rec_name))
-                    TimesheetLine.delete([activity.timesheet_line])
-                continue
-
-            if not activity.timesheet_line:
-                if not activity.duration:
-                    continue
-                if not activity.resource.timesheet_works:
-                    key = 'no_timesheet_work_%d' % activity.id
-                    if Warning.check(key):
-                        raise UserWarning(key, gettext(
-                            'project_activity.msg_no_timesheet_works',
-                            work=activity.resource.rec_name))
+            to_save = []
+            for activity in activities:
+                if not isinstance(activity.resource, Work):
+                    if activity.timesheet_line:
+                        key = 'no_resource_assigned_%d'  % activity.id
+                        if Warning.check(key):
+                            raise UserWarning(key, gettext(
+                                'project_activity.msg_no_resource',
+                                timesheet=activity.timesheet_line.rec_name))
+                        TimesheetLine.delete([activity.timesheet_line])
                     continue
 
-                timesheet_line = TimesheetLine()
-                timesheet_line.activity = activity
-                timesheet_line.work = activity.resource.timesheet_works[0]
-            else:
-                timesheet_line = activity.timesheet_line
-                if not activity.duration and timesheet_line:
-                    key = 'no_duration_%d' % activity.id
-                    if Warning.check(key):
-                        raise UserWarning(key, gettext(
-                            'project_activity.msg_no_duration',
-                            activity=activity.rec_name,
-                            timesheet=timesheet_line.rec_name))
-                    TimesheetLine.delete([timesheet_line])
-                    continue
+                if not activity.timesheet_line:
+                    if not activity.duration:
+                        continue
+                    if not activity.resource.timesheet_works:
+                        key = 'no_timesheet_work_%d' % activity.id
+                        if Warning.check(key):
+                            raise UserWarning(key, gettext(
+                                'project_activity.msg_no_timesheet_works',
+                                work=activity.resource.rec_name))
+                        continue
 
-            for attribute in ['company', 'employee', 'duration', 'date']:
-                value = getattr(activity, attribute)
-                if getattr(timesheet_line, attribute, None) != value:
-                    setattr(timesheet_line, attribute, value)
+                    timesheet_line = TimesheetLine()
+                    timesheet_line.activity = activity
+                    timesheet_line.work = activity.resource.timesheet_works[0]
+                else:
+                    timesheet_line = activity.timesheet_line
+                    if not activity.duration and timesheet_line:
+                        key = 'no_duration_%d' % activity.id
+                        if Warning.check(key):
+                            raise UserWarning(key, gettext(
+                                'project_activity.msg_no_duration',
+                                activity=activity.rec_name,
+                                timesheet=timesheet_line.rec_name))
+                        TimesheetLine.delete([timesheet_line])
+                        continue
 
-            if timesheet_line.work != activity.resource.timesheet_works[0]:
-                timesheet_line.work = activity.resource.timesheet_works[0]
+                for attribute in ['company', 'employee', 'duration', 'date']:
+                    value = getattr(activity, attribute)
+                    if getattr(timesheet_line, attribute, None) != value:
+                        setattr(timesheet_line, attribute, value)
 
-            if (hasattr(timesheet_line, 'start')
-                    and (timesheet_line.start or timesheet_line.end)):
-                timesheet_line.start = None
-                timesheet_line.end = None
+                if timesheet_line.work != activity.resource.timesheet_works[0]:
+                    timesheet_line.work = activity.resource.timesheet_works[0]
 
-            to_save.append(timesheet_line)
+                if (hasattr(timesheet_line, 'start')
+                        and (timesheet_line.start or timesheet_line.end)):
+                    timesheet_line.start = None
+                    timesheet_line.end = None
 
-        TimesheetLine.save(to_save)
+                to_save.append(timesheet_line)
+
+            TimesheetLine.save(to_save)
 
     @classmethod
     def delete(cls, activities):
