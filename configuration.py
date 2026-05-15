@@ -7,7 +7,7 @@ from trytond.modules.company.model import CompanyValueMixin
 
 
 class WorkConfiguration(metaclass=PoolMeta):
-    __name__ = 'work.configuration'
+    __name__ = 'project.configuration'
 
     email_activity_type = fields.Many2One('activity.type',
         'E-mail Activity Type', required=True)
@@ -23,13 +23,13 @@ class WorkConfiguration(metaclass=PoolMeta):
     def multivalue_model(cls, field):
         pool = Pool()
         if field in {'email_activity_employee'}:
-            return pool.get('work.configuration.activity_employee')
+            return pool.get('project.configuration.activity_employee')
         return super(WorkConfiguration, cls).multivalue_model(field)
 
 
 class ConfigurationEmployee(ModelSQL, CompanyValueMixin):
     "Activity Employee"
-    __name__ = 'work.configuration.activity_employee'
+    __name__ = 'project.configuration.activity_employee'
 
     email_activity_employee = fields.Many2One('company.employee',
         'Activity Employee', domain=[
