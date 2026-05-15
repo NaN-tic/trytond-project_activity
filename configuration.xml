@@ -5,8 +5,8 @@
 <tryton>
     <data>
         <record model="ir.ui.view" id="work_configuration_view_form">
-            <field name="model">work.configuration</field>
-            <field name="inherit" ref="project_sequence.work_configuration_view_form"/>
+            <field name="model">project.configuration</field>
+            <field name="inherit" ref="project.project_configuration_view_form"/>
             <field name="name">work_configuration_form</field>
         </record>
     </data>

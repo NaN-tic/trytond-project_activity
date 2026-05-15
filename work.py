@@ -83,7 +83,7 @@ class Project(metaclass=PoolMeta):
     @classmethod
     def copy(cls, project_works, default=None):
         pool = Pool()
-        Configuration = pool.get('work.configuration')
+        Configuration = pool.get('project.configuration')
         config = Configuration(1)
 
         if default is None:
@@ -255,7 +255,7 @@ class Activity(metaclass=PoolMeta):
         ElectronicMail = pool.get('electronic.mail')
         ProjectWork = pool.get('project.work')
         Work = pool.get('project.work')
-        Configuration = pool.get('work.configuration')
+        Configuration = pool.get('project.configuration')
         Employee = pool.get('company.employee')
 
         def extract_id(reference):
@@ -401,7 +401,7 @@ class Activity(metaclass=PoolMeta):
         Work = pool.get('project.work')
         TimesheetLine = pool.get('timesheet.line')
         Warning = pool.get('res.user.warning')
-        Configuration = pool.get('work.configuration')
+        Configuration = pool.get('project.configuration')
 
         with Transaction().set_context(_check_access=False):
             config = Configuration(1)
