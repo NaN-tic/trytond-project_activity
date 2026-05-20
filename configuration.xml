@@ -4,10 +4,10 @@
 
 <tryton>
     <data>
-        <record model="ir.ui.view" id="work_configuration_view_form">
+        <record model="ir.ui.view" id="project_configuration_view_form">
             <field name="model">project.configuration</field>
             <field name="inherit" ref="project.project_configuration_view_form"/>
-            <field name="name">work_configuration_form</field>
+            <field name="name">project_configuration_form</field>
         </record>
     </data>
 </tryton>
