@@ -31,7 +31,7 @@ class TestTimesheetSync(unittest.TestCase):
         TimesheetLine = Model.get('timesheet.line')
         User = Model.get('res.user')
         Work = Model.get('project.work')
-        WorkConfig = Model.get('work.configuration')
+        WorkConfig = Model.get('project.configuration')
         WorkStatus = Model.get('project.work.status')
 
         customer = Party(name='Customer')
