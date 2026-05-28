@@ -123,11 +123,15 @@ contains the full copyright notices and license terms. -->
         </record>
 
         <!-- obtain email activity -->
+    </data>
+    <data noupdate="1">
         <record model="ir.cron" id="cron_get_mail_activity">
             <field name="method">activity.activity|cron_get_mail_activity</field>
             <field name="interval_number" eval="5"/>
             <field name="interval_type">minutes</field>
         </record>
+    </data>
+    <data>
 
         <record model="activity.reference" id="project_work_reference">
             <field name="model" search="[('name', '=', 'project.work')]"/>
