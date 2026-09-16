@@ -66,8 +66,9 @@ class Project(metaclass=PoolMeta):
 
     activities = fields.One2Many('activity.activity', 'resource',
         'Activities', context={
+            'company': Eval('company', -1),
             'project_party': Eval('party'),
-            }, depends=['party'])
+            }, depends=['company', 'party'])
     last_action_date = fields.Function(fields.DateTime('Last Action'),
         'get_activity_fields')
     channel = fields.Function(fields.Many2One('activity.type', 'Channel'),
@@ -269,8 +270,6 @@ class Activity(metaclass=PoolMeta):
                 return
 
         configuration = Configuration(1)
-        default_employee = configuration.email_activity_employee
-        default_activity_type = configuration.email_activity_type
         mailbox = configuration.email_activity_mailbox
         if not mailbox:
             return
@@ -304,12 +303,18 @@ class Activity(metaclass=PoolMeta):
                         ], limit=1)
 
                 if works:
+                    work = works[0]
+                    with Transaction().set_context(company=work.company.id):
+                        configuration = Configuration(1)
+                        default_employee = configuration.email_activity_employee
+                        default_activity_type = configuration.email_activity_type
                     # Search if the sender is an employee
                     employee = default_employee
                     if mail.from_:
                         from_email = re.findall(EMAIL_PATTERN, mail.from_)
                         if from_email:
                             employees = Employee.search([
+                                    ('company', '=', work.company.id),
                                     ('party.contact_mechanisms.value', '=',
                                         from_email[0])
                                     ], limit=1)
@@ -321,8 +326,9 @@ class Activity(metaclass=PoolMeta):
                             ('create', [{
                                     'description': mail.body_plain,
                                     'subject': mail.subject,
-                                    'resource': 'project.work,%s' % works[0].id,
+                                    'resource': 'project.work,%s' % work.id,
                                     # Mandatory fields:
+                                    'company': work.company,
                                     'dtstart': mail.date,
                                     'activity_type': default_activity_type,
                                     'state': 'done',
