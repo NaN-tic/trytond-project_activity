@@ -23,6 +23,7 @@ def register():
 
     Pool.register(
         work.ProjectActivityEmail,
+        work.MailActivity,
         module='project_activity', type_='model',
         depends=['electronic_mail_activity'])
 

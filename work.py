@@ -366,7 +366,7 @@ class Activity(metaclass=PoolMeta):
         Work = pool.get('project.work')
         to_save = []
         for activity in activities:
-            if activity.activity_type or activity.resource:
+            if activity.activity_type and activity.resource:
                 if (isinstance(activity.resource, Work)
                         and activity.activity_type.update_status_on_stakeholder_action):
                     work = activity.resource
@@ -500,6 +500,40 @@ class Activity(metaclass=PoolMeta):
     @ModelView.button_action('project_activity.act_create_resource_wizard')
     def create_resource(cls, activities):
         pass
+
+
+class MailActivity(metaclass=PoolMeta):
+    __name__ = 'activity.activity'
+
+    @classmethod
+    def write(cls, *args):
+        # Only a newly linked message may trigger a stakeholder transition.
+        eligible = set()
+        for records, values in zip(args[::2], args[1::2]):
+            for record in records:
+                if any(key in values and values[key] != (
+                            str(getattr(record, key))
+                            if getattr(record, key) else None)
+                        for key in ('origin', 'resource')):
+                    eligible.add(record.id)
+        with Transaction().set_context(mail_stakeholder_activities=eligible):
+            super().write(*args)
+
+    @classmethod
+    def update_status_on_stakeholder_action(cls, activities):
+        eligible = Transaction().context.get('mail_stakeholder_activities')
+        selected = []
+        for activity in activities:
+            headers = activity.get_mail_participants()
+            if headers is not None:
+                if eligible is not None and activity.id not in eligible:
+                    continue
+                senders = activity.emails_to_check(activity.parse_addresses([
+                            headers.get('from', '')]))
+                if not senders:
+                    continue
+            selected.append(activity)
+        super().update_status_on_stakeholder_action(selected)
 
 
 class CreateResource(Wizard):
