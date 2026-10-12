@@ -95,7 +95,7 @@ contains the full copyright notices and license terms. -->
         <!-- Menus -->
         <menuitem action="act_project_activity_reference"
             id="menu_project_reference"
-            parent="project.menu_configuration" sequence="1"
+            parent="project.menu_configuration" sequence="20"
             name="Project Reference"/>
 
         <record model="ir.action.act_window" id="act_activity_form2">
