@@ -5,6 +5,7 @@ import html
 import humanize
 import re
 import mimetypes
+from datetime import datetime
 from itertools import chain
 try:
     from http import HTTPStatus
@@ -26,6 +27,17 @@ from trytond.modules.electronic_mail_activity.activity import SendActivityMailMi
 from trytond.exceptions import UserWarning
 
 EMAIL_PATTERN = r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+"
+
+def format_naturaltime(value, lang):
+    try:
+        try:
+            humanize.i18n.activate(lang.code)
+        except FileNotFoundError:
+            humanize.i18n.deactivate()
+        return humanize.naturaltime(value, when=datetime.utcnow())
+    finally:
+        humanize.i18n.deactivate()
+
 
 def create_anchors(text):
     return re.sub(r"((http|https):\/\/\S*)", r'<a href="\1" target="_blank" rel="noopener">\1</a>', text)
@@ -140,6 +152,8 @@ class Project(metaclass=PoolMeta):
     def get_conversation_activities(cls, activities, extranet=False):
         pool = Pool()
         Attachment = pool.get('ir.attachment')
+        Lang = pool.get('ir.lang')
+        lang = Lang.get()
 
         transaction = Transaction()
         database = transaction.database.name
@@ -188,14 +202,15 @@ class Project(metaclass=PoolMeta):
             if extranet:
                 date_human = ''
             else:
-                date_human = ', ' + humanize.naturaltime(activity.dtstart)
+                date_human = ', ' + format_naturaltime(activity.dtstart, lang)
 
             body = gettext('project_activity.msg_conversation',
                 type=activity.activity_type.name,
                 code=activity.code,
                 subject=activity.subject or '',
-                date=activity.date,
-                time=activity.time or '',
+                date=lang.strftime(activity.date),
+                time=(lang.strftime(activity.time, '%X')
+                    if activity.time else ''),
                 date_human=date_human,
                 contact=(activity.contacts and
                          activity.contacts[0].party.name or ''),
