@@ -90,6 +90,7 @@ contains the full copyright notices and license terms. -->
         <record model="ir.action.wizard" id="act_create_resource_wizard">
             <field name="name">Create Resource</field>
             <field name="wiz_name">activity.create_resource</field>
+            <field name="model">activity.activity</field>
         </record>
 
         <!-- Menus -->
